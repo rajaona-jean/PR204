@@ -110,20 +110,9 @@ void sigchld_handler(int sig)
 
 
 int main(int argc, char *argv[]){
-	int i;
 	char* path = "machines.txt";
-	DSM_NODE_NUM = nb_of_user(path);
-	printf("  %d",DSM_NODE_NUM);
-	machines_names = malloc(DSM_NODE_NUM*sizeof(char*));
-	for (i = 0; i < DSM_NODE_NUM; i++)
-		machines_names[i] = malloc(sizeof(char) * 50);
 
 
-	init_names(path,machines_names,DSM_NODE_NUM);
-
-
-	for (i = 0; i < DSM_NODE_NUM; i++)
-		printf(" nom machine: %s\n",machines_names[i]);
 	if (argc < 3){
 		usage();
 	} else {
@@ -136,35 +125,61 @@ int main(int argc, char *argv[]){
 
 		/* lecture du fichier de machines */
 		/* 1- on recupere le nombre de processus a lancer */
+		num_procs = nb_of_user(path);
+		printf("  %d\n",num_procs);
+
 		/* 2- on recupere les noms des machines : le nom de */
 		/* la machine est un des elements d'identification */
-
+		machines_names = malloc(num_procs*sizeof(char*));
+		for (i = 0; i < num_procs; i++)
+			machines_names[i] = malloc(sizeof(char) * 50);
+		init_names(path,machines_names,num_procs);
 		/* creation de la socket d'ecoute */
+
 		/* + ecoute effective */
 
 		/* creation des fils */
 		for(i = 0; i < num_procs ; i++) {
 
 			/* creation du tube pour rediriger stdout */
-
+			int tube_stdout[2];
 			/* creation du tube pour rediriger stderr */
-
+			int tube_stderr[2];
 			pid = fork();
 			if(pid == -1) ERROR_EXIT("fork");
 
 			if (pid == 0) { /* fils */
-
+				int j;
 				/* redirection stdout */
+				dup2(STDOUT_FILENO,tube_stdout[0]);
+				close(tube_stdout[0]); //suppression tube en lecture
+
 
 				/* redirection stderr */
+				dup2(STDERR_FILENO,tube_stderr[0]);
+				close(tube_stderr[0]);
+
 
 				/* Creation du tableau d'arguments pour le ssh */
+				char* msg = "";
+				void* newarg[argc-1];
+				for(j=0; i<argc; j++){
+					newarg[j]=argv[j+1];
+					//sprintf(msg," %s", (char*)newarg[j]);
+				}
+				printf(" %s: %s\n",machines_names[i],argv[1]);
+
+
+
 
 				/* jump to new prog : */
 				/* execvp("ssh",newargv); */
 
+
 			} else  if(pid > 0) { /* pere */
 				/* fermeture des extremites des tubes non utiles */
+				close(tube_stdout[1]);
+				close(tube_stderr[1]);
 				num_procs_creat++;
 			}
 		}
