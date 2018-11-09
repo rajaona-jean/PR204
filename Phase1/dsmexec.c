@@ -20,6 +20,7 @@ volatile int  DSM_NODE_NUM ;
 volatile int  DSM_NODE_ID ;
 volatile int* BASE_ADDR ;
 volatile int* TOP_ADDR ;
+int STATUS = 0 ; 
 
 /* un tableau gerant les infos d'identification */
 char** machines_names ;
@@ -31,22 +32,6 @@ dsm_proc_t *proc_array = NULL;
 volatile int num_procs_creat = 0;
 
 
-int nb_of_user(char* path){
-	FILE* fich;
-	int nb_mot = -1;
-	char* l = malloc(sizeof(char));
-	int fin = 0;
-	fich = fopen(path,"r");
-	while(fin == 0){
-		fread(l,1,1,fich);
-		if(l[0] == '\n')
-			nb_mot++;
-		fin = feof(fich);
-	}
-
-	fclose(fich);
-	return nb_mot;
-}
 
 void init_names(char* path,char** machines_names, int nb_mach){
 	FILE* fich;
@@ -104,8 +89,11 @@ void usage(void)
 
 void sigchld_handler(int sig)
 {
-	/* on traite les fils qui se terminent */
-	/* pour eviter les zombies */
+   /* on traite les fils qui se terminent */
+   /* pour eviter les zombies */
+  wait(NULL);
+  STATUS = 1 ;
+
 }
 
 
@@ -123,6 +111,10 @@ int main(int argc, char *argv[]){
 		/* Mise en place d'un traitant pour recuperer les fils zombies*/
 		/* XXX.sa_handler = sigchld_handler; */
 
+		struct sigaction * sig_zombie = malloc(sizeof(struct sigaction));
+     	memset (sig_zombie, 0 , sizeof(struct sigaction) );
+     	sig_zombie -> sa_handler = sigchld_handler ; 
+
 		/* lecture du fichier de machines */
 		/* 1- on recupere le nombre de processus a lancer */
 		num_procs = nb_of_user(path);
@@ -137,6 +129,9 @@ int main(int argc, char *argv[]){
 		/* creation de la socket d'ecoute */
 
 		/* + ecoute effective */
+
+
+
 
 		/* creation des fils */
 		for(i = 0; i < num_procs ; i++) {

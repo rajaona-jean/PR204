@@ -1,0 +1,21 @@
+_ dans document machine file il y a liste des utilisateur pour faire les ssh 
+
+_ appel à partir de dsm exec 
+_ ssh nom_machine nom_commande 
+_ configuration statique: on sait combien il y a de processus et comment ça varie au cours du temps 
+_ connexion par socket TCP : port et @IP avec connect et accept ( cf jalon4)
+_ socket entre chaque processus et dsmexec et les machines pour ssh 
+informaton à envoyer : DSM_NODE_NUM, DSM_NODE_ID
+_ les processus font l'exec de la commande ssh -> 1 pour chaque machine ( fork)
+_ fork des fils qui vont faire le ssh automatiquement
+_ dsmexec centralise l'affichage de tous les processus distants-> redirection de l'output de tous les processus sur le processus central( proc 0 - "truc affiché par proc 0"), donc rapatriement de l'affichage 
+- FILS ÉCRIVAINS,père lecteur 
+_ père vérifie en boucle infinie ( tout le temps ) s'il y a des choses à lire
+_ fermeture des tubes récupération avec poll ( ou select mais cf jalon)
+_ s'il n'y a plus rien à lire, arrêt de la boucle infinie 
+_ avant ssh redirection de l'output sur les extrémités en écriture des tubes 
+_ fdcloexec pour que redirection n'existe plus après l'exec
+_ difficiulté: toruver astuce pour que tout le monde puisse echanger des infos différentes 
+_ Pour cela programme intermédiaire
+ssh toto proc_intermédiaire ( dsmwrap.c) argdsmwrap nom_commande arg1 arg2 ...
+
