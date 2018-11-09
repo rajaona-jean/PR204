@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <signal.h>
 
+
 /* variables globales */
 #define PAGE_NUMBER 10
 #define PAGE_SIZE
@@ -32,6 +33,23 @@ dsm_proc_t *proc_array = NULL;
 volatile int num_procs_creat = 0;
 
 
+
+int nb_of_user(char* path){
+	FILE* fich;
+	int nb_mot = -1;
+	char* l = malloc(sizeof(char));
+	int fin = 0;
+	fich = fopen(path,"r");
+	while(fin == 0){
+		fread(l,1,1,fich);
+		if(l[0] == '\n')
+			nb_mot++;
+		fin = feof(fich);
+	}
+
+	fclose(fich);
+	return nb_mot;
+}
 
 void init_names(char* path,char** machines_names, int nb_mach){
 	FILE* fich;
@@ -110,7 +128,6 @@ int main(int argc, char *argv[]){
 
 		/* Mise en place d'un traitant pour recuperer les fils zombies*/
 		/* XXX.sa_handler = sigchld_handler; */
-
 		struct sigaction * sig_zombie = malloc(sizeof(struct sigaction));
      	memset (sig_zombie, 0 , sizeof(struct sigaction) );
      	sig_zombie -> sa_handler = sigchld_handler ; 
@@ -130,16 +147,17 @@ int main(int argc, char *argv[]){
 
 		/* + ecoute effective */
 
-
-
+    	int * port_num = malloc(sizeof(int));
+    	*port_num = 8081;
+    	creer_socket(num_procs, port_num);
 
 		/* creation des fils */
-		for(i = 0; i < num_procs ; i++) {
+		for(i = 0; i <= num_procs ; i++) {
 
 			/* creation du tube pour rediriger stdout */
-			int tube_stdout[2];
+			int tube_stdout[2] = {3,4};
 			/* creation du tube pour rediriger stderr */
-			int tube_stderr[2];
+			int tube_stderr[2] = {3,4};
 			pid = fork();
 			if(pid == -1) ERROR_EXIT("fork");
 
@@ -156,12 +174,12 @@ int main(int argc, char *argv[]){
 
 
 				/* Creation du tableau d'arguments pour le ssh */
-				char* msg = "";
-				void* newarg[argc-1];
-				for(j=0; i<argc; j++){
-					newarg[j]=argv[j+1];
-					//sprintf(msg," %s", (char*)newarg[j]);
-				}
+//				char* msg = malloc(argc*sizeof(char));
+//				void* newarg[argc-1];
+//				for(j=0; i<argc; j++){
+//					newarg[j]=argv[j+1];
+//					sprintf(msg," %s", (char*)newarg[j]);
+//				}
 				printf(" %s: %s\n",machines_names[i],argv[1]);
 
 
@@ -175,12 +193,13 @@ int main(int argc, char *argv[]){
 				/* fermeture des extremites des tubes non utiles */
 				close(tube_stdout[1]);
 				close(tube_stderr[1]);
+				wait(NULL);
 				num_procs_creat++;
 			}
 		}
 
 
-		for(i = 0; i < num_procs ; i++){
+		for(i = 0; i <= num_procs ; i++){
 
 			/* on accepte les connexions des processus dsm */
 

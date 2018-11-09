@@ -33,4 +33,4 @@ struct dsm_proc {
 };
 typedef struct dsm_proc dsm_proc_t;
 
-int creer_socket(int type, int *port_num);
+int creer_socket(int num_procs, int *port_num);
