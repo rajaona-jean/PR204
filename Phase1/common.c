@@ -1,19 +1,23 @@
 #include "common_impl.h"
 
-int creer_socket(int prop, int *port_num) 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriétés bloquantes ou non bloquantes
 {
-	int fd;
+
+	int fd = 0;
   struct sockaddr_in sin;
-  struct pollfd fds[DSM_NODE_NUM];
-
-
-  sin.sin_port = port_num;
+  struct pollfd fds[num_procs];
+  sin.sin_addr.s_addr = htonl(INADDR_ANY);
+  sin.sin_family=AF_INET;
+  sin.sin_port = htons(*port_num);
    
    /* fonction de creation et d'attachement */
    /* d'une nouvelle socket */
    /* renvoie le numero de descripteur */
    /* et modifie le parametre port_num */
-  poll(fd,DSM_NODE_NUM+1,  -1);
 
   int sock = socket(AF_INET, SOCK_STREAM, 0);
   if(sock == -1)
@@ -32,7 +36,7 @@ int creer_socket(int prop, int *port_num)
     exit(0);
   }
 
-  int lst = listen(sock, DSM_NODE_NUM);
+  int lst = listen(sock, num_procs);
   if ( lst== -1 ){
     perror("listen()");
     exit(0);

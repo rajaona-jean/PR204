@@ -150,13 +150,9 @@ int main(int argc, char *argv[]){
 		/* creation de la socket d'ecoute */
 		/* + ecoute effective */
 
-    	struct sockaddr_in sin;
-
-    	sin.sin_addr.s_addr = INADDR_ANY;
-    	sin.sin_family=AF_INET;
-    	sin.port_num = 
-    	int prop;
-    	creer_socket(prop, &port_num);
+    	int * port_num = NULL ; 
+    	*port_num = 8080;
+    	creer_socket(num_procs, port_num);
 
 		/* creation des fils */
 		for(i = 0; i < num_procs ; i++) {
