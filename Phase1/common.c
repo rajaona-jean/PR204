@@ -17,7 +17,6 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 
 	int fd = 0;
 	struct sockaddr_in sin;
-	struct pollfd fds[num_procs];
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
 	sin.sin_family=AF_INET;
 	sin.sin_port = htons(*port_num);
@@ -36,8 +35,7 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 	}
 
 	memset(fds,'\0',sizeof(fds));
-	fds[0].fd = sock;
-	fds[0].events = POLLIN;
+	fd = sock;
 
 	int bnd = bind(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
 	if ( bnd == -1 ){

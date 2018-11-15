@@ -174,12 +174,12 @@ int main(int argc, char *argv[]){
 
 
 				/* Creation du tableau d'arguments pour le ssh */
-//				char* msg = malloc(argc*sizeof(char));
-//				void* newarg[argc-1];
-//				for(j=0; i<argc; j++){
-//					newarg[j]=argv[j+1];
-//					sprintf(msg," %s", (char*)newarg[j]);
-//				}
+				char* msg = malloc(argc*sizeof(char));
+				void* newarg[argc-1];
+				for(j=0; i<argc; j++){
+					newarg[j]=argv[j+1];
+					sprintf(msg," %s", (char*)newarg[j]);
+				}
 				printf(" %s: %s\n",machines_names[i],argv[1]);
 
 
@@ -197,12 +197,14 @@ int main(int argc, char *argv[]){
 				num_procs_creat++;
 			}
 		}
-		char ** name = malloc(num_procs *sizeof(char*));
+
+		
 		struct sockaddr_in sin; 
 		int size = sizeof(sin);
 		int len;
 		int csock ;
 		pid_t pid_dist ;
+		struct pollfd fds[num_procs]; 
 		for(i = 0; i <= num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
 
@@ -214,7 +216,8 @@ int main(int argc, char *argv[]){
 			/* 2- puis la chaine elle-meme */
 
 			len= strlen(machines_names[i]);
-			name[i] = machines_names[i];
+			char * name= malloc (sizeof(char)* len);
+			name = machines_names[i];
 
 			/* On recupere le pid du processus distant  */
 			
@@ -222,20 +225,20 @@ int main(int argc, char *argv[]){
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
-			port_num = (int*)POLLIN;
+			poll( fds, num_procs+1, -1);
 		}
 
 		/* envoi du nombre de processus aux processus dsm*/
 		
-		write(FD,num_procs, len+1);
+		write(FD,(void*)newargv, len+1);
 		printf("%d\n", num_procs);
 
 		/* envoi des rangs aux processus dsm */
-		write(FD, );
+		//write(FD, );
 		printf("le rang du processus \n" );
 
 		/* envoi des infos de connexion aux processus */
-		write(FD,);
+		//write(FD,);
 		printf("informations de connexion\n" );
 
 		/* gestion des E/S : on recupere les caracteres */

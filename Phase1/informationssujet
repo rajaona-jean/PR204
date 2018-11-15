@@ -17,5 +17,5 @@ _ avant ssh redirection de l'output sur les extrémités en écriture des tubes
 _ fdcloexec pour que redirection n'existe plus après l'exec
 _ difficiulté: toruver astuce pour que tout le monde puisse echanger des infos différentes 
 _ Pour cela programme intermédiaire
-ssh toto proc_intermédiaire ( dsmwrap.c) argdsmwrap nom_commande arg1 arg2 ...
+ssh   toto    proc_intermédiaire( dsmwrap.c)   argdsmwrap   nom_commande   arg1   arg2 ...
 
