@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <poll.h>
 
 /* autres includes (eventuellement) */
@@ -22,6 +24,8 @@
 struct dsm_proc_conn  {
    int rank;
    /* a completer */
+   char IPaddr;
+   int port; 
 };
 typedef struct dsm_proc_conn dsm_proc_conn_t; 
 
@@ -31,6 +35,12 @@ struct dsm_proc {
   pid_t pid;
   dsm_proc_conn_t connect_info;
 };
+
 typedef struct dsm_proc dsm_proc_t;
 
+
+
+
 int creer_socket(int num_procs, int *port_num);
+
+int return_IPaddress(int adresse);

@@ -34,7 +34,6 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 		exit(0);
 	}
 
-	memset(fds,'\0',sizeof(fds));
 	fd = sock;
 
 
@@ -58,3 +57,12 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 /* et le processus intermediaire. N'oubliez pas */
 /* de declarer le prototype de ces nouvelles */
 /* fonctions dans common_impl.h */
+
+
+
+int return_IPaddress(int adresse){
+	return (inet_addr(adresse));
+}
+
+
+

@@ -119,6 +119,7 @@ void sigchld_handler(int sig)
 
 int main(int argc, char *argv[]){
 	char* path = "machines.txt";
+	struct dsm_proc dsm_proc_t;
 
 
 	if (argc < 1){
@@ -161,7 +162,7 @@ int main(int argc, char *argv[]){
 			int tube_stderr[2] = {0,1};
 
 			pid = fork();
-			__WAIT_STATUS status;
+			WAIT_STATUS status;
 			if(pid == -1) ERROR_EXIT("fork");
 			//printf("pid: %d\n",pid);
 
@@ -239,24 +240,20 @@ int main(int argc, char *argv[]){
 
 		/* envoi du nombre de processus aux processus dsm*/
 		
-		write(FD,(void*)newargv, len+1);
+		write(FD,&num_procs, len+1);
 		printf("%d\n", num_procs);
 
 		/* envoi des rangs aux processus dsm */
 
-		//write(FD, );
+		write(FD,&dsm_proc_t.connect_info.rank, len+1 );
 		printf("le rang du processus \n" );
 
 		/* envoi des infos de connexion aux processus */
-		//write(FD,);
+		int adr =return_IPaddress(dsm_proc_t.connect_info.IPaddr) ;
+		write(FD,&adr, len+1);
+		write(FD,&dsm_proc_t.connect_info.port, len+1);
 		printf("informations de connexion\n" );
 
-//		write(FD, );
-//		printf("le rang du processus \n" );
-
-		/* envoi des infos de connexion aux processus */
-//		write(FD,);
-//		printf("informations de connexion\n" );
 		/* gestion des E/S : on recupere les caracteres */
 		/* sur les tubes de redirection de stdout/stderr */
 		/* while(1)
