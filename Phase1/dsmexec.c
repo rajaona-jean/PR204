@@ -148,10 +148,9 @@ int main(int argc, char *argv[]){
 		/* creation de la socket d'ecoute */
 
 		/* + ecoute effective */
-
-		int * port_num = malloc(sizeof(int));
-		*port_num = 8081;
-		creer_socket(num_procs, port_num);
+    	int * port_num = malloc(sizeof(int));
+    	*port_num = 8080;
+    	int FD = creer_socket(num_procs, port_num);
 
 		/* creation des fils */
 		for(i = 0; i <= num_procs ; i++) {
@@ -200,26 +199,51 @@ int main(int argc, char *argv[]){
 			}
 		}
 
+		char ** name = malloc(num_procs *sizeof(char*));
+		struct sockaddr_in sin; 
+//		struct pollfd fds[num_procs];
+		int size = sizeof(sin);
+		int len;
+		int csock ;
+		pid_t pid_dist ;
+
+//		memset(fds,'\0',sizeof(fds));
+//		fds[0].fd = FD;
+//		fds[0].events = POLLIN;
 
 		for(i = 0; i <= num_procs ; i++){
-
 			/* on accepte les connexions des processus dsm */
+			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
 
 			/*  On recupere le nom de la machine distante */
+
 			/* 1- d'abord la taille de la chaine */
 			/* 2- puis la chaine elle-meme */
 
+			len= strlen(machines_names[i]);
+			name[i] = machines_names[i];
+
 			/* On recupere le pid du processus distant  */
+			
+			pid_dist = getpid();
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
+			port_num = (int*)POLLIN;
 		}
 
 		/* envoi du nombre de processus aux processus dsm*/
+		
+		write(FD,num_procs, len+1);
+		printf("%d\n", num_procs);
 
 		/* envoi des rangs aux processus dsm */
+//		write(FD, );
+//		printf("le rang du processus \n" );
 
 		/* envoi des infos de connexion aux processus */
+//		write(FD,);
+//		printf("informations de connexion\n" );
 
 		/* gestion des E/S : on recupere les caracteres */
 		/* sur les tubes de redirection de stdout/stderr */
