@@ -12,6 +12,8 @@
 #include <sys/time.h>
 #include <signal.h>
 
+#include <sys/types.h>
+#include <sys/wait.h>
 
 /* variables globales */
 #define PAGE_NUMBER 10
@@ -107,10 +109,10 @@ void usage(void)
 
 void sigchld_handler(int sig)
 {
-   /* on traite les fils qui se terminent */
-   /* pour eviter les zombies */
-  wait(NULL);
-  STATUS = 1 ;
+	/* on traite les fils qui se terminent */
+	/* pour eviter les zombies */
+	wait(NULL);
+	//STATUS = 1 ;
 
 }
 
@@ -119,7 +121,7 @@ int main(int argc, char *argv[]){
 	char* path = "machines.txt";
 
 
-	if (argc < 3){
+	if (argc < 1){
 		usage();
 	} else {
 		pid_t pid;
@@ -129,8 +131,8 @@ int main(int argc, char *argv[]){
 		/* Mise en place d'un traitant pour recuperer les fils zombies*/
 		/* XXX.sa_handler = sigchld_handler; */
 		struct sigaction * sig_zombie = malloc(sizeof(struct sigaction));
-     	memset (sig_zombie, 0 , sizeof(struct sigaction) );
-     	sig_zombie -> sa_handler = sigchld_handler ; 
+		memset (sig_zombie, 0 , sizeof(struct sigaction) );
+		sig_zombie -> sa_handler = sigchld_handler ;
 
 		/* lecture du fichier de machines */
 		/* 1- on recupere le nombre de processus a lancer */
@@ -146,23 +148,25 @@ int main(int argc, char *argv[]){
 		/* creation de la socket d'ecoute */
 
 		/* + ecoute effective */
-
     	int * port_num = malloc(sizeof(int));
-    	*port_num = 8081;
+    	*port_num = 8080;
     	int FD = creer_socket(num_procs, port_num);
 
 		/* creation des fils */
 		for(i = 0; i <= num_procs ; i++) {
 
 			/* creation du tube pour rediriger stdout */
-			int tube_stdout[2] = {3,4};
+			int tube_stdout[2] = {0,1};
 			/* creation du tube pour rediriger stderr */
-			int tube_stderr[2] = {3,4};
+			int tube_stderr[2] = {0,1};
+
 			pid = fork();
+			__WAIT_STATUS status;
 			if(pid == -1) ERROR_EXIT("fork");
+			//printf("pid: %d\n",pid);
 
 			if (pid == 0) { /* fils */
-				//int j;
+				int j;
 				/* redirection stdout */
 				dup2(STDOUT_FILENO,tube_stdout[0]);
 				close(tube_stdout[0]); //suppression tube en lecture
@@ -174,14 +178,13 @@ int main(int argc, char *argv[]){
 
 
 				/* Creation du tableau d'arguments pour le ssh */
-				char* msg = malloc(argc*sizeof(char));
-				void* newarg[argc-1];
-				for(j=0; i<argc; j++){
-					newarg[j]=argv[j+1];
-					sprintf(msg," %s", (char*)newarg[j]);
-				}
-				printf(" %s: %s\n",machines_names[i],argv[1]);
 
+				void* newarg[argc];
+				printf(" argc: %d\n",argc);
+				for(j=0; j<argc; j++){
+					newarg[j]=argv[j+1];
+					printf(" %s: %s\n",machines_names[i],newarg[j]);
+				}
 
 
 
@@ -193,25 +196,31 @@ int main(int argc, char *argv[]){
 				/* fermeture des extremites des tubes non utiles */
 				close(tube_stdout[1]);
 				close(tube_stderr[1]);
-				wait(NULL);
 				num_procs_creat++;
+				//wait(status);
 			}
 		}
 
-		
+
 		struct sockaddr_in sin; 
+//		struct pollfd fds[num_procs];
 		int size = sizeof(sin);
 		int len;
 		int csock ;
 		pid_t pid_dist ;
+
 		struct pollfd fds[num_procs]; 
+
+
+//		memset(fds,'\0',sizeof(fds));
+//		fds[0].fd = FD;
+//		fds[0].events = POLLIN;
 		for(i = 0; i <= num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
-
-			
-			csock= accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
+			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
 
 			/*  On recupere le nom de la machine distante */
+
 			/* 1- d'abord la taille de la chaine */
 			/* 2- puis la chaine elle-meme */
 
@@ -234,6 +243,7 @@ int main(int argc, char *argv[]){
 		printf("%d\n", num_procs);
 
 		/* envoi des rangs aux processus dsm */
+
 		//write(FD, );
 		printf("le rang du processus \n" );
 
@@ -241,6 +251,12 @@ int main(int argc, char *argv[]){
 		//write(FD,);
 		printf("informations de connexion\n" );
 
+//		write(FD, );
+//		printf("le rang du processus \n" );
+
+		/* envoi des infos de connexion aux processus */
+//		write(FD,);
+//		printf("informations de connexion\n" );
 		/* gestion des E/S : on recupere les caracteres */
 		/* sur les tubes de redirection de stdout/stderr */
 		/* while(1)
