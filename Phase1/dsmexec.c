@@ -179,17 +179,21 @@ int main(int argc, char *argv[]){
 
 				/* Creation du tableau d'arguments pour le ssh */
 
-				void* newarg[argc];
+				void* newargv[argc];
 				printf(" argc: %d\n",argc);
 				for(j=0; j<argc; j++){
-					newarg[j]=argv[j+1];
-					printf(" %s: %s\n",machines_names[i],newarg[j]);
+					newargv[j]=argv[j+1];
+					printf(" %s: %s\n",machines_names[i],newargv[j]);
 				}
-
 
 
 				/* jump to new prog : */
 				/* execvp("ssh",newargv); */
+				char* dsm[3];
+				dsm[0] = "ssh";
+				dsm[1] = machines_names[i];
+				dsm[2] = "pwd";
+				execvp("ssh",dsm,NULL);
 
 
 			} else  if(pid > 0) { /* pere */
@@ -234,13 +238,13 @@ int main(int argc, char *argv[]){
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
-			poll( fds, num_procs+1, -1);
+			//poll( fds, num_procs+1, -1);
 		}
 
 		/* envoi du nombre de processus aux processus dsm*/
 		
-		write(FD,(void*)newargv, len+1);
-		printf("%d\n", num_procs);
+//		write(FD,(void*)newargv, len+1);
+//		printf("%d\n", num_procs);
 
 		/* envoi des rangs aux processus dsm */
 

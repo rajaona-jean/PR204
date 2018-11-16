@@ -4,12 +4,42 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
 void setsock(int socket_fd){
 	int option = 1;
 	int error = setsockopt(socket_fd,SOL_SOCKET,(SO_REUSEPORT | SO_REUSEADDR),(char*)&option,sizeof(option));
 	if(error == -1){
 		perror("setsockopt");
 	}
+}
+
+void init_server_addr(char* addr,int port,struct sockaddr_in server_sock){
+	memset(&server_sock,'\0',sizeof(server_sock));
+	server_sock.sin_family = AF_INET;
+	server_sock.sin_port = htons(port);
+	inet_aton(addr,&server_sock.sin_addr);
+	//return server_sock;
+}
+
+void do_connect(int client_socket,struct sockaddr_in server_sock){
+	int err = connect(client_socket,(struct sockaddr *)&server_sock,sizeof(server_sock));
+	if(err == -1){
+		ERROR_EXIT("connect");
+	}
+}
+
+int do_socket(){
+	int s = socket(AF_INET,SOCK_STREAM,0);
+	if (s == -1){
+		fprintf(stdout , " client: Erreur création de socket 2\n");
+		fflush(stdout);
+		ERROR_EXIT("socket");
+	}
+	else{
+		fprintf(stdout , " client: Socket créée %d\n", s);
+		fflush(stdout);
+	}
+	return s;
 }
 
 int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriétés bloquantes ou non bloquantes
@@ -30,23 +60,22 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 	setsock(sock);
 	if(sock == -1)
 	{
-		perror("socket()");
+		perror("socket");
 		exit(0);
 	}
 
-	memset(fds,'\0',sizeof(fds));
 	fd = sock;
 
 
 	int bnd = bind(sock, (struct sockaddr*)&sin, sizeof(struct sockaddr_in));
 	if ( bnd == -1 ){
-		perror("bind()");
+		perror("bind");
 		exit(0);
 	}
 
 	int lst = listen(sock, num_procs);
 	if ( lst== -1 ){
-		perror("listen()");
+		perror("listen");
 		exit(0);
 	}
 
