@@ -118,11 +118,11 @@ void sigchld_handler(int sig)
 
 
 int main(int argc, char *argv[]){
-	char* path = "machines.txt";
+	char* path = argv[1];
 	struct dsm_proc dsm_proc_t;
 
 
-	if (argc < 1){
+	if (argc < 3){
 		usage();
 	} else {
 		pid_t pid;
@@ -154,61 +154,60 @@ int main(int argc, char *argv[]){
     	int FD = creer_socket(num_procs, port_num);
 
 		/* creation des fils */
-		for(i = 0; i <= num_procs ; i++) {
+		for(i = 0; i < num_procs ; i++) {
 
 			/* creation du tube pour rediriger stdout */
-			int tube_stdout[2] = {0,1};
-			/* creation du tube pour rediriger stderr */
-			int tube_stderr[2] = {0,1};
+			int tube_stdout[2][num_procs];
 
+			/* creation du tube pour rediriger stderr */
+			int tube_stderr[2][num_procs];
 			pid = fork();
+
 			__WAIT_STATUS status;
+
 			if(pid == -1) ERROR_EXIT("fork");
 			//printf("pid: %d\n",pid);
 
 			if (pid == 0) { /* fils */
+				wait(NULL);
 				int j;
 				/* redirection stdout */
-				dup2(STDOUT_FILENO,tube_stdout[0]);
-				close(tube_stdout[0]); //suppression tube en lecture
+				dup2(STDOUT_FILENO,tube_stdout[0][i]);
+				close(tube_stdout[0][i]); //suppression tube en lecture
 
 
 				/* redirection stderr */
-				dup2(STDERR_FILENO,tube_stderr[0]);
-				close(tube_stderr[0]);
+				dup2(STDERR_FILENO,tube_stderr[0][i]);
+				close(tube_stderr[0][i]);
 
 
 				/* Creation du tableau d'arguments pour le ssh */
-
-				void* newargv[argc];
-				printf(" argc: %d\n",argc);
+				char* newargv[3+argc];
+				newargv[0] = "ssh";
+				newargv[1] = machines_names[i];
+				newargv[2] = "./Documents/C/Projet/PR204_Dsm/Phase1/bin/dsmwrap";
 				for(j=0; j<argc; j++){
-					newargv[j]=argv[j+1];
-					printf(" %s: %s\n",machines_names[i],newargv[j]);
+					newargv[j+3]=argv[j+1];
+					//printf(" %s: %s\n",machines_names[i],(char*)newargv[j]);
 				}
 
 
 				/* jump to new prog : */
 				/* execvp("ssh",newargv); */
-				char* dsm[3];
-				dsm[0] = "ssh";
-				dsm[1] = machines_names[i];
-				dsm[2] = "pwd";
-				execvp("ssh",dsm,NULL);
+				execvp("ssh",newargv);
 
 
 			} else  if(pid > 0) { /* pere */
 				/* fermeture des extremites des tubes non utiles */
-				close(tube_stdout[1]);
-				close(tube_stderr[1]);
+				close(tube_stdout[1][i]);
+				close(tube_stderr[1][i]);
 				num_procs_creat++;
-				//wait(status);
+				wait(status);
 			}
 		}
 
 
 		struct sockaddr_in sin; 
-//		struct pollfd fds[num_procs];
 		int size = sizeof(sin);
 		int len;
 		int csock ;
@@ -216,13 +215,13 @@ int main(int argc, char *argv[]){
 
 		struct pollfd fds[num_procs]; 
 
-
 //		memset(fds,'\0',sizeof(fds));
 //		fds[0].fd = FD;
 //		fds[0].events = POLLIN;
-		for(i = 0; i <= num_procs ; i++){
+
+		for(i = 0; i < num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
-			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
+			//csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
 
 			/*  On recupere le nom de la machine distante */
 

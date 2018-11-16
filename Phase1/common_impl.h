@@ -43,11 +43,11 @@ typedef struct dsm_proc dsm_proc_t;
 
 int creer_socket(int num_procs, int *port_num);
 
-<<<<<<< HEAD
+
 void init_server_addr(char* addr,int port,struct sockaddr_in server_sock);
 void setsock(int socket_fd);
 void do_connect(int client_socket,struct sockaddr_in server_sock);
 int do_socket();
-=======
+
 int return_IPaddress(int adresse);
->>>>>>> 290018b0ae4132f489d717ff777e2ca66cadce35
+
