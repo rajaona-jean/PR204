@@ -89,10 +89,20 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 /* fonctions dans common_impl.h */
 
 
-
-int return_IPaddress(int adresse){
+// retourne l'addresse de la structure sous la bonne forme
+int return_IPaddress(int adresse)
+{
 	return (inet_addr(adresse));
 }
 
+// initialise les structures dsm_proc
+void dsm_init(int rank, pid_t pid, char Addr, int *port, struct dsm_proc * dsm_proc_t)
+{
+	struct dsm_proc_conn * connect_info = malloc(sizeof(connect_info));
+		connect_info->rank = rank;
+		connect_info->IPaddr = Addr;
+		connect_info->port= port;
+		dsm_proc_t->connect_info = *connect_info;
 
+}
 
