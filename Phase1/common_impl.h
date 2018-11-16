@@ -50,3 +50,7 @@ void do_connect(int client_socket,struct sockaddr_in server_sock);
 int do_socket();
 
 int return_IPaddress(int adresse);
+<<<<<<< HEAD
+=======
+
+>>>>>>> ceb85e659780f9c743521fb3d710472619ebb4f5

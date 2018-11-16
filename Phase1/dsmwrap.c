@@ -3,10 +3,17 @@
 int main(int argc, char **argv)
 {
 	int client_sock;
+	int j;
 	struct sockaddr_in server_sock;
 
 	printf("DSMWRAP\n");
+	printf(" argc: %d\n",argc);
 	fflush(stdout);
+
+	for(j=0; j<argc; j++){
+		printf(" arg[%d]: %s\n",j,(char*)argv[j]);
+	}
+
    /* processus intermediaire pour "nettoyer" */
    /* la liste des arguments qu'on va passer */
    /* a la commande a executer vraiment */
