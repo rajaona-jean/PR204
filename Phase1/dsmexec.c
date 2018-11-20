@@ -1,19 +1,5 @@
 #include "common_impl.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <poll.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <signal.h>
-
-#include <sys/types.h>
-#include <sys/wait.h>
 
 /* variables globales */
 #define PAGE_NUMBER 10
@@ -118,10 +104,11 @@ void sigchld_handler(int sig)
 
 
 int main(int argc, char *argv[]){
+
 	char* path = "machines.txt";
 	struct dsm_proc dsm_proc_t;
 	struct dsm_proc_conn connect_info;
-
+	
 
 	if (argc < 1){
 		usage();
@@ -164,7 +151,7 @@ int main(int argc, char *argv[]){
 
 			pid[i] = fork();
 
-			int status;
+			//WAIT_STATUS status;
 			if(pid[i] == -1) ERROR_EXIT("fork");
 			//printf("pid: %d\n",pid);
 
@@ -236,22 +223,21 @@ int main(int argc, char *argv[]){
 			
 			dsm_proc_t.pid = getpid();
 			connect_info.rank = pid[i];
-			//connect_info.IPaddr = ;
-			//adresse en commentaire pour le moment car il faut pouvoir récupérer 
-			//l'argument d'adresse sur les ssh des autres processus
+			connect_info.IPaddr = *gethostbyname(name) ;
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
 			connect_info.port = port_num;
+			dsm_proc_t.connect_info = connect_info;
 
 		}
 
 		/* envoi du nombre de processus aux processus dsm*/
-		int **buf = NULL;
+		int * buf[4];
 		int *buf1;
 		buf1 = &num_procs;
 		write(FD,buf1, len+1);
-		printf("%d\n", num_procs);
+		printf("le nombre de processus est%d\n", num_procs);
 		*buf[0]= *buf1;
 		/* envoi des rangs aux processus dsm */
 		int *buf2;
@@ -260,13 +246,17 @@ int main(int argc, char *argv[]){
 		printf("le rang du processus \n" );
 		*buf[1] =*buf2;
 		/* envoi des infos de connexion aux processus */
-		//int adr =return_IPaddress(connect_info.IPaddr) ;
-		//write(FD,&adr, len+1);
-		int *buf3;
-		buf3 = connect_info.port;
-		write(FD,buf3, len+1);
-		printf("informations de connexion\n" );
+		
+		int *buf3 ;
+		buf3 = &connect_info.IPaddr;
 		*buf[2] = *buf3;
+		write(FD,buf3, len+1);
+
+		int *buf4 ;
+		buf4 = connect_info.port;
+		write(FD,buf4, len+1);
+		printf("informations de connexion\n" );
+		*buf[3] = *buf4;
 
 		/* gestion des E/S : on recupere les caracteres */
 		/* sur les tubes de redirection de stdout/stderr */
