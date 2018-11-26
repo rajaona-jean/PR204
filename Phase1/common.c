@@ -1,8 +1,5 @@
 #include "common_impl.h"
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+
 
 
 void setsock(int socket_fd){
@@ -87,12 +84,6 @@ int creer_socket(/*int prop*/int num_procs, int *port_num) //prop pour propriét
 /* et le processus intermediaire. N'oubliez pas */
 /* de declarer le prototype de ces nouvelles */
 /* fonctions dans common_impl.h */
-
-
-
-int return_IPaddress(int adresse){
-	return (inet_addr(adresse));
-}
 
 
 

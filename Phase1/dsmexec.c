@@ -1,19 +1,5 @@
 #include "common_impl.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <poll.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <signal.h>
-
-#include <sys/types.h>
-#include <sys/wait.h>
 
 /* variables globales */
 #define PAGE_NUMBER 10
@@ -118,14 +104,16 @@ void sigchld_handler(int sig)
 
 
 int main(int argc, char *argv[]){
-	char* path = argv[1];
+
+	char* path = "machines.txt";
 	struct dsm_proc dsm_proc_t;
+	struct dsm_proc_conn connect_info;
+	
 
-
-	if (argc < 3){
+	if (argc < 1){
 		usage();
 	} else {
-		pid_t pid;
+		pid_t *pid= NULL;
 		int num_procs = 0;
 		int i;
 
@@ -154,31 +142,29 @@ int main(int argc, char *argv[]){
     	int FD = creer_socket(num_procs, port_num);
 
 		/* creation des fils */
-		for(i = 0; i < num_procs ; i++) {
+		for(i = 0; i <= num_procs ; i++) {
 
 			/* creation du tube pour rediriger stdout */
-			int tube_stdout[2][num_procs];
-
+			int tube_stdout[2] = {0,1};
 			/* creation du tube pour rediriger stderr */
-			int tube_stderr[2][num_procs];
-			pid = fork();
+			int tube_stderr[2] = {0,1};
 
-			__WAIT_STATUS status;
+			pid[i] = fork();
 
-			if(pid == -1) ERROR_EXIT("fork");
+			//WAIT_STATUS status;
+			if(pid[i] == -1) ERROR_EXIT("fork");
 			//printf("pid: %d\n",pid);
 
-			if (pid == 0) { /* fils */
-				wait(NULL);
+			if (pid[i] == 0) { /* fils */
 				int j;
 				/* redirection stdout */
-				dup2(STDOUT_FILENO,tube_stdout[0][i]);
-				close(tube_stdout[0][i]); //suppression tube en lecture
+				dup2(STDOUT_FILENO,tube_stdout[0]);
+				close(tube_stdout[0]); //suppression tube en lecture
 
 
 				/* redirection stderr */
-				dup2(STDERR_FILENO,tube_stderr[0][i]);
-				close(tube_stderr[0][i]);
+				dup2(STDERR_FILENO,tube_stderr[0]);
+				close(tube_stderr[0]);
 
 
 				/* Creation du tableau d'arguments pour le ssh */
@@ -203,15 +189,19 @@ int main(int argc, char *argv[]){
 
 				/* jump to new prog : */
 				/* execvp("ssh",newargv); */
-				execvp("ssh",newargv);
+				char* dsm[3];
+				dsm[0] = "ssh";
+				dsm[1] = machines_names[i];
+				dsm[2] = "pwd";
+				execvp("ssh",dsm);
 
 
 			} else  if(pid > 0) { /* pere */
 				/* fermeture des extremites des tubes non utiles */
-				close(tube_stdout[1][i]);
-				close(tube_stderr[1][i]);
+				close(tube_stdout[1]);
+				close(tube_stderr[1]);
 				num_procs_creat++;
-				wait(status);
+				//wait(status);
 			}
 		}
 
@@ -220,17 +210,14 @@ int main(int argc, char *argv[]){
 		int size = sizeof(sin);
 		int len;
 		int csock ;
-		pid_t pid_dist ;
+		struct pollfd fds;
+		fds.events = POLLIN;
 
-		struct pollfd fds[num_procs]; 
+		//struct pollfd fds[num_procs]; 
 
-//		memset(fds,'\0',sizeof(fds));
-//		fds[0].fd = FD;
-//		fds[0].events = POLLIN;
-
-		for(i = 0; i < num_procs ; i++){
+		for(i = 0; i <= num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
-			//csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
+			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
 
 			/*  On recupere le nom de la machine distante */
 
@@ -240,43 +227,57 @@ int main(int argc, char *argv[]){
 			len= strlen(machines_names[i]);
 			char * name= malloc (sizeof(char)* len);
 			name = machines_names[i];
+			
 
 			/* On recupere le pid du processus distant  */
 			
-			pid_dist = getpid();
+			dsm_proc_t.pid = getpid();
+			connect_info.rank = pid[i];
+			connect_info.IPaddr = *gethostbyname(name) ;
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
-			//poll( fds, num_procs+1, -1);
+			connect_info.port = port_num;
+			dsm_proc_t.connect_info = connect_info;
+
 		}
 
 		/* envoi du nombre de processus aux processus dsm*/
-		
-
-		write(FD,&num_procs, len+1);
-		printf("%d\n", num_procs);
-
+		int * buf[4];
+		int *buf1;
+		buf1 = &num_procs;
+		write(FD,buf1, len+1);
+		printf("le nombre de processus est%d\n", num_procs);
+		*buf[0]= *buf1;
 		/* envoi des rangs aux processus dsm */
-
-		write(FD,&dsm_proc_t.connect_info.rank, len+1 );
+		int *buf2;
+		buf2 = &connect_info.rank;
+		write(FD,buf2, len+1 );
 		printf("le rang du processus \n" );
-
+		*buf[1] =*buf2;
 		/* envoi des infos de connexion aux processus */
-		int adr =return_IPaddress(dsm_proc_t.connect_info.IPaddr) ;
-		write(FD,&adr, len+1);
-		write(FD,&dsm_proc_t.connect_info.port, len+1);
+		
+		int *buf3 ;
+		buf3 = &connect_info.IPaddr;
+		*buf[2] = *buf3;
+		write(FD,buf3, len+1);
+
+		int *buf4 ;
+		buf4 = connect_info.port;
+		write(FD,buf4, len+1);
 		printf("informations de connexion\n" );
+		*buf[3] = *buf4;
 
 		/* gestion des E/S : on recupere les caracteres */
 		/* sur les tubes de redirection de stdout/stderr */
-		/* while(1)
+		/*while(1)
          {
             je recupere les infos sur les tubes de redirection
             jusqu'à ce qu'ils soient inactifs (ie fermes par les
             processus dsm ecrivains de l'autre cote ...)
 
-         };
-		 */
+         }
+		*/
 
 		/* on attend les processus fils */
 
