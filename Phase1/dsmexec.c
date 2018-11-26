@@ -182,15 +182,24 @@ int main(int argc, char *argv[]){
 
 
 				/* Creation du tableau d'arguments pour le ssh */
-				char* newargv[3+argc];
+//				char** newargv = malloc(sizeof(char)*(4+argc));
+//				for(i=0;i<4+argc;i++){
+//					newargv[i]=malloc(sizeof(char)*512);
+//				}
+
+				char* newargv[1+argc];
 				newargv[0] = "ssh";
 				newargv[1] = machines_names[i];
 				newargv[2] = "./Documents/C/Projet/PR204_Dsm/Phase1/bin/dsmwrap";
-				for(j=0; j<argc; j++){
-					newargv[j+3]=argv[j+1];
-					//printf(" %s: %s\n",machines_names[i],(char*)newargv[j]);
+				newargv[2+argc] = NULL;
+
+				for(j=1; j<argc; j++){
+					newargv[j+2]=argv[j];
 				}
 
+				for(j=0; j<argc+4; j++){
+					printf(" %s: %s\n",machines_names[i],(char*)newargv[j]);
+				}
 
 				/* jump to new prog : */
 				/* execvp("ssh",newargv); */
