@@ -222,8 +222,14 @@ int main(int argc, char *argv[]){
 		for(i = 1; i <= num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
 			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
+			if(csock == -1){
+				perror("accept");exit(0);
+			}
+			else{
+				printf("accept\n");
+			}
+
 			fds[i].fd = csock;
-			printf(" accept\n");
 			fflush(stdout);
 			/*  On recupere le nom de la machine distante */
 
@@ -237,59 +243,59 @@ int main(int argc, char *argv[]){
 
 			/* On recupere le pid du processus distant  */
 
-//			dsm_proc_t.pid = getpid();
-//			connect_info.rank = pid[i];
-//			connect_info.IPaddr = *gethostbyname(name) ;
+			//			dsm_proc_t.pid = getpid();
+			//			connect_info.rank = pid[i];
+			//			connect_info.IPaddr = *gethostbyname(name) ;
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
 			//connect_info.port = port_num;
-//			dsm_proc_t.connect_info = connect_info;
+			//			dsm_proc_t.connect_info = connect_info;
 
 		}
 
-//		/* envoi du nombre de processus aux processus dsm*/
-//		int * buf[4];
-//		int *buf1;
-//		buf1 = &num_procs;
-//		write(FD,buf1, len+1);
-//		printf("le nombre de processus est%d\n", num_procs);
-//		*buf[0]= *buf1;
-//		/* envoi des rangs aux processus dsm */
-//		int *buf2;
-//		buf2 = &connect_info.rank;
-//		write(FD,buf2, len+1 );
-//		printf("le rang du processus \n" );
-//		*buf[1] =*buf2;
-//		/* envoi des infos de connexion aux processus */
-//
-//		int *buf3 ;
-//		buf3 = &connect_info.IPaddr;
-//		*buf[2] = *buf3;
-//		write(FD,buf3, len+1);
-//
-//		int *buf4 ;
-//		buf4 = connect_info.port;
-//		write(FD,buf4, len+1);
-//		printf("informations de connexion\n" );
-//		*buf[3] = *buf4;
-//
-//		/* gestion des E/S : on recupere les caracteres */
-//		/* sur les tubes de redirection de stdout/stderr */
-//		/*while(1)
-//         {
-//            je recupere les infos sur les tubes de redirection
-//            jusqu'à ce qu'ils soient inactifs (ie fermes par les
-//            processus dsm ecrivains de l'autre cote ...)
-//
-//         }
-//		 */
-//
-//		/* on attend les processus fils */
-//
-//		/* on ferme les descripteurs proprement */
-//
-//		/* on ferme la socket d'ecoute */
+		//		/* envoi du nombre de processus aux processus dsm*/
+		//		int * buf[4];
+		//		int *buf1;
+		//		buf1 = &num_procs;
+		//		write(FD,buf1, len+1);
+		//		printf("le nombre de processus est%d\n", num_procs);
+		//		*buf[0]= *buf1;
+		//		/* envoi des rangs aux processus dsm */
+		//		int *buf2;
+		//		buf2 = &connect_info.rank;
+		//		write(FD,buf2, len+1 );
+		//		printf("le rang du processus \n" );
+		//		*buf[1] =*buf2;
+		//		/* envoi des infos de connexion aux processus */
+		//
+		//		int *buf3 ;
+		//		buf3 = &connect_info.IPaddr;
+		//		*buf[2] = *buf3;
+		//		write(FD,buf3, len+1);
+		//
+		//		int *buf4 ;
+		//		buf4 = connect_info.port;
+		//		write(FD,buf4, len+1);
+		//		printf("informations de connexion\n" );
+		//		*buf[3] = *buf4;
+		//
+		//		/* gestion des E/S : on recupere les caracteres */
+		//		/* sur les tubes de redirection de stdout/stderr */
+		//		/*while(1)
+		//         {
+		//            je recupere les infos sur les tubes de redirection
+		//            jusqu'à ce qu'ils soient inactifs (ie fermes par les
+		//            processus dsm ecrivains de l'autre cote ...)
+		//
+		//         }
+		//		 */
+		//
+		//		/* on attend les processus fils */
+		//
+		//		/* on ferme les descripteurs proprement */
+		//
+		//		/* on ferme la socket d'ecoute */
 	}
 	exit(EXIT_SUCCESS);
 }

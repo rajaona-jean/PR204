@@ -15,6 +15,7 @@ int main(int argc, char **argv)
 
 	for(j=0; j<argc; j++){
 		printf(" arg[%d]: %s\n",j,(char*)argv[j]);
+		fflush(stdout);
 
 	}
 
@@ -24,6 +25,7 @@ int main(int argc, char **argv)
 	for(j=0; j<argc-3; j++){
 		true_arg[j] = argv[j+4];
 		printf(" true_arg[%d]: %s\n",j,(char*)true_arg[j]);
+		fflush(stdout);
 
 	}
 

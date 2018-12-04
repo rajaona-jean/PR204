@@ -17,12 +17,11 @@ void init_server_addr(char* addr,int port,struct sockaddr_in server_sock){
 	//return server_sock;
 }
 
-int do_connect(char* ip_addr,int port){
+int do_connect(char* ip_addr,char* port){
 	int client_sock = 0;
 	struct sockaddr_in *sin;
 	struct addrinfo hints;
 	struct addrinfo *server,*result;
-	char h_name[128];
 	int s; // getaddrinfo return
 
 
@@ -99,7 +98,7 @@ int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour pro
 
 
 	gethostname(h_name, 128);
-	s = getaddrinfo(h_name,NULL, &hints, &result);
+	s = getaddrinfo(h_name,"8080", &hints, &result);
 
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
