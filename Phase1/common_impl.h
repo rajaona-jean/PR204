@@ -15,9 +15,9 @@
 #include <netdb.h>
 #include <poll.h>
 
+#define BUFF_SIZE 512;
 int  DSM_NODE_NUM ;
-int  size_buff;
-char buffer[512];
+
 
 /* autres includes (eventuellement) */
 
@@ -59,4 +59,4 @@ int creer_socket(int num_procs, father_info *f_info);
 void setsock(int socket_fd);
 int do_connect(char* ip_addr,char* port);
 void do_read(int client_sock,int server_sock);
-void do_write(int client_sock,int server_sock);
+void do_write(int client_sock);

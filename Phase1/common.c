@@ -9,17 +9,9 @@ void setsock(int socket_fd){
 	}
 }
 
-void init_server_addr(char* addr,int port,struct sockaddr_in server_sock){
-	memset(&server_sock,'\0',sizeof(server_sock));
-	server_sock.sin_family = AF_INET;
-	server_sock.sin_port = htons(port);
-	inet_aton(addr,&server_sock.sin_addr);
-	//return server_sock;
-}
 
 int do_connect(char* ip_addr,char* port){
 	int client_sock = 0;
-	struct sockaddr_in *sin;
 	struct addrinfo hints;
 	struct addrinfo *server,*result;
 	int s; // getaddrinfo return
@@ -57,19 +49,6 @@ int do_connect(char* ip_addr,char* port){
 	return client_sock;
 }
 
-int do_socket(){
-	int s = socket(AF_INET,SOCK_STREAM,0);
-	if (s == -1){
-		fprintf(stdout , " client: Erreur création de socket 2\n");
-		fflush(stdout);
-		ERROR_EXIT("socket");
-	}
-	else{
-		fprintf(stdout , " client: Socket créée %d\n", s);
-		fflush(stdout);
-	}
-	return s;
-}
 
 int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour propriétés bloquantes ou non bloquantes
 {
@@ -133,23 +112,6 @@ int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour pro
 	return sock;
 }
 
-void do_read(int client_sock,int server_sock){
-	int txt_size;
-	memset(buffer,'\0',512);
-	txt_size = recv(client_sock,buffer,512,0);
-	if(txt_size==-1){
-		perror("recv");close(server_sock); exit(EXIT_FAILURE);
-	}
-
-}
-
-void do_write(int client_sock,int server_sock){
-	int size_txt = strlen(buffer);
-	int s = send(client_sock,buffer,size_txt,0);
-	if(s==-1){
-		perror("send");close(server_sock);exit(EXIT_FAILURE);
-	}
-}
 
 /* Vous pouvez ecrire ici toutes les fonctions */
 /* qui pourraient etre utilisees par le lanceur */

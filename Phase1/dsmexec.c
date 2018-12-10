@@ -5,11 +5,14 @@
 #define PAGE_NUMBER 10
 #define PAGE_SIZE
 
+
 volatile int  DSM_NODE_ID ;
 volatile int* BASE_ADDR ;
 volatile int* TOP_ADDR ;
-int STATUS = 0 ; 
 
+int STATUS = 0 ; 
+char buffer[512];
+const int buff_size = 512;
 
 /* un tableau gerant les infos d'identification */
 char** machines_names ;
@@ -41,7 +44,6 @@ int nb_of_user(char* path){
 
 void init_names(char* path,char** machines_names, int nb_mach){
 	FILE* fich;
-	//int nb_mot = -1;
 	char* l = malloc(sizeof(char));
 	int fin = 0;
 	fich = fopen(path,"r");
@@ -102,10 +104,61 @@ void sigchld_handler(int sig)
 
 }
 
+void do_read(int client_sock,int server_sock){
+
+	strcat(buffer,"\0");
+	int bit_rcv;
+	int *size_txt = malloc(sizeof(int));
+	*size_txt = 0;
+	memset(buffer,'\0',buff_size);
+
+	bit_rcv = recv(client_sock,size_txt,sizeof(int),0);
+
+//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
+//	fflush(stdout);
+
+	if(bit_rcv==-1){
+		perror("recv");close(server_sock); exit(EXIT_FAILURE);
+	}
+
+	bit_rcv = recv(client_sock,buffer,*size_txt,0);
+	if(bit_rcv==-1){
+		perror("recv");close(server_sock); exit(EXIT_FAILURE);
+	}
+
+//	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
+//	fflush(stdout);
+
+	free(size_txt);
+}
+
+void do_write(int client_sock){
+
+	strcat(buffer,"\0");
+	int *size_txt = malloc(sizeof(int));
+	*size_txt =0;
+	*size_txt = strlen(buffer);
+	int bit_sent = 0;
+
+
+	bit_sent = send(client_sock,size_txt,sizeof(int),0);
+
+//	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
+//	fflush(stdout);
+
+	bit_sent = send(client_sock,buffer,*size_txt,0);
+	if(bit_sent==-1){
+		perror("send");close(client_sock);exit(EXIT_FAILURE);
+	}
+
+//	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
+//	fflush(stdout);
+
+	memset(buffer,'\0',buff_size);
+	free(size_txt);
+}
 
 int main(int argc, char *argv[]){
-
-	size_buff = 512;
 	char* path = "./machines.txt"; //argv[1];
 	struct dsm_proc dsm_proc_t;
 	struct dsm_proc_conn connect_info;
@@ -197,6 +250,7 @@ int main(int argc, char *argv[]){
 			} else  if(pid[i] > 0) { /* pere */
 				/* fermeture des extremites des tubes non utiles */
 				close(tube_stdout[1][i]);
+				waitpid(pid[i],&status,0);
 				close(tube_stderr[1][i]);
 				num_procs_creat++;
 				waitpid(pid[i],&status,0);
@@ -222,26 +276,33 @@ int main(int argc, char *argv[]){
 		for(i = 1; i <= num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
 			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
+
 			if(csock == -1){
 				perror("accept");exit(0);
 			}
 			else{
 				printf("accept\n");
+				fflush(stdout);
 			}
 
 			fds[i].fd = csock;
-			fflush(stdout);
 			/*  On recupere le nom de la machine distante */
 
 			/* 1- d'abord la taille de la chaine */
+			do_read(csock,FD);
+			len= strlen(buffer);
 			/* 2- puis la chaine elle-meme */
+			char name[len];
+			strcpy(name,buffer);
 
-//			len= strlen(machines_names[i]);
-//			char * name= malloc (sizeof(char)* len);
-//			name = machines_names[i];
+			printf(" taille du nom: %d\n machine name: %s\n",len,name);
+			fflush(stdout);
 
 
 			/* On recupere le pid du processus distant  */
+			do_read(csock,FD);
+			printf(" PID: %s\n",buffer);
+			fflush(stdout);
 
 			//			dsm_proc_t.pid = getpid();
 			//			connect_info.rank = pid[i];
