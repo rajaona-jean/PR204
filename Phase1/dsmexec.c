@@ -82,6 +82,8 @@ void init_names(char* path,char** machines_names, int nb_mach){
 
 	fclose(fich);
 	for(i=0;i<nb_mach;i++){
+		if(strcmp(mots[i],"localhost")==0)
+			gethostname(mots[i],128);
 		strcpy(machines_names[i],mots[i]);
 	}
 
@@ -104,7 +106,7 @@ void sigchld_handler(int sig)
 
 }
 
-void do_read(int client_sock,int server_sock){
+void do_read(int client_sock){
 
 	strcat(buffer,"\0");
 	int bit_rcv;
@@ -114,20 +116,20 @@ void do_read(int client_sock,int server_sock){
 
 	bit_rcv = recv(client_sock,size_txt,sizeof(int),0);
 
-//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
-//	fflush(stdout);
+	//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
+	//	fflush(stdout);
 
 	if(bit_rcv==-1){
-		perror("recv");close(server_sock); exit(EXIT_FAILURE);
+		perror("recv");close(client_sock); exit(EXIT_FAILURE);
 	}
 
 	bit_rcv = recv(client_sock,buffer,*size_txt,0);
 	if(bit_rcv==-1){
-		perror("recv");close(server_sock); exit(EXIT_FAILURE);
+		perror("recv");close(client_sock); exit(EXIT_FAILURE);
 	}
 
-//	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
-//	fflush(stdout);
+	//		printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
+	//		fflush(stdout);
 
 	free(size_txt);
 }
@@ -143,27 +145,40 @@ void do_write(int client_sock){
 
 	bit_sent = send(client_sock,size_txt,sizeof(int),0);
 
-//	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
-//	fflush(stdout);
+	//	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
+	//	fflush(stdout);
 
 	bit_sent = send(client_sock,buffer,*size_txt,0);
 	if(bit_sent==-1){
 		perror("send");close(client_sock);exit(EXIT_FAILURE);
 	}
 
-//	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
-//	fflush(stdout);
+	//	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
+	//	fflush(stdout);
 
 	memset(buffer,'\0',buff_size);
 	free(size_txt);
 }
 
+int find_rank(char* machine_name){
+	int i =0;
+	while( i<DSM_NODE_NUM){
+		if(strcmp(machine_name,machines_names[i])==0)
+			break;
+		i++;
+	}
+	return i;
+}
+
 int main(int argc, char *argv[]){
 	char* path = "./machines.txt"; //argv[1];
-	struct dsm_proc dsm_proc_t;
-	struct dsm_proc_conn connect_info;
 	char* int_to_char=malloc(sizeof(int));
 
+	struct sigaction * sig_zombie = malloc(sizeof(struct sigaction));
+
+	int num_procs = 0;
+	num_procs = nb_of_user(path);
+	pid_t pid[num_procs];
 
 	if (argc < 1){
 		usage();
@@ -172,16 +187,15 @@ int main(int argc, char *argv[]){
 
 		/* Mise en place d'un traitant pour recuperer les fils zombies*/
 		/* XXX.sa_handler = sigchld_handler; */
-		struct sigaction * sig_zombie = malloc(sizeof(struct sigaction));
+
 		memset (sig_zombie, 0 , sizeof(struct sigaction) );
 		sig_zombie -> sa_handler = sigchld_handler ;
 
 		/* lecture du fichier de machines */
 		/* 1- on recupere le nombre de processus a lancer */
-		int num_procs = 0;
-		num_procs = nb_of_user(path);
+
 		DSM_NODE_NUM = num_procs;
-		pid_t pid[num_procs];
+
 		printf("  %d\n",num_procs);
 
 		/* 2- on recupere les noms des machines : le nom de */
@@ -193,8 +207,8 @@ int main(int argc, char *argv[]){
 
 		/* creation de la socket d'ecoute */
 		/* + ecoute effective */
-		father_info f_info;
-		int FD = creer_socket(num_procs, &f_info);
+		server_info father_info;
+		int FD = creer_socket(num_procs, &father_info,"8079");
 
 
 		/* creation du tube pour rediriger stdout */
@@ -233,15 +247,20 @@ int main(int argc, char *argv[]){
 
 				/* Creation du tableau d'arguments pour le ssh */
 
-				char* newargv[5+argc];
+				char* newargv[6+argc];
+				newargv[4] = malloc(sizeof(int));
+				newargv[5] = malloc(sizeof(int));
+
 				newargv[0] = "ssh";
 				newargv[1] = machines_names[i];
 				newargv[2] = "./Documents/C/Projet/PR204_Dsm/Phase1/bin/dsmwrap";
-				newargv[3] = f_info.ip_addr;
-				sprintf(int_to_char, "%d", f_info.port);
-				newargv[4] = int_to_char;
+				newargv[3] = father_info.ip_addr;
+				sprintf(int_to_char, "%d", father_info.port);
+				strcpy(newargv[4],int_to_char);
+				sprintf(int_to_char, "%d", num_procs);
+				strcpy(newargv[5], int_to_char);
 				for(j=1; j<=argc; j++){
-					newargv[j+4]=argv[j];
+					newargv[j+5]=argv[j];
 				}
 
 				execvp("ssh",newargv);
@@ -250,7 +269,6 @@ int main(int argc, char *argv[]){
 			} else  if(pid[i] > 0) { /* pere */
 				/* fermeture des extremites des tubes non utiles */
 				close(tube_stdout[1][i]);
-				waitpid(pid[i],&status,0);
 				close(tube_stderr[1][i]);
 				num_procs_creat++;
 				waitpid(pid[i],&status,0);
@@ -259,9 +277,12 @@ int main(int argc, char *argv[]){
 
 
 		struct sockaddr_in sin;
+		dsm_proc_t info_process_distant[num_procs];
+		int rank;
 		int size = sizeof(sin);
 		int len;
 		int csock ;
+		pid_t pid_proc_dist;
 		struct pollfd fds[num_procs];
 
 
@@ -289,58 +310,47 @@ int main(int argc, char *argv[]){
 			/*  On recupere le nom de la machine distante */
 
 			/* 1- d'abord la taille de la chaine */
-			do_read(csock,FD);
+			do_read(csock);
 			len= strlen(buffer);
 			/* 2- puis la chaine elle-meme */
 			char name[len];
 			strcpy(name,buffer);
-
-			printf(" taille du nom: %d\n machine name: %s\n",len,name);
-			fflush(stdout);
+			rank = find_rank(name);
 
 
 			/* On recupere le pid du processus distant  */
-			do_read(csock,FD);
+			do_read(csock);
 			printf(" PID: %s\n",buffer);
 			fflush(stdout);
+			pid_proc_dist = atoi(buffer);
 
-			//			dsm_proc_t.pid = getpid();
-			//			connect_info.rank = pid[i];
-			//			connect_info.IPaddr = *gethostbyname(name) ;
+			info_process_distant[i].connect_info.rank = rank;
+			info_process_distant[i].pid = pid_proc_dist;
+			info_process_distant[i].connect_info.name = name;
+
+			printf(" machine name: %s \n rank: %d\n pid: %d\n",info_process_distant[i].connect_info.name,info_process_distant[i].connect_info.rank,info_process_distant[i].pid = pid_proc_dist);
+			fflush(stdout);
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
-			//connect_info.port = port_num;
-			//			dsm_proc_t.connect_info = connect_info;
+			do_read(csock);
+			info_process_distant[i].connect_info.port = atoi(buffer);
+
+			do_read(csock);
+			info_process_distant[i].connect_info.ip_addr = buffer;
+
 
 		}
 
-		//		/* envoi du nombre de processus aux processus dsm*/
-		//		int * buf[4];
-		//		int *buf1;
-		//		buf1 = &num_procs;
-		//		write(FD,buf1, len+1);
-		//		printf("le nombre de processus est%d\n", num_procs);
-		//		*buf[0]= *buf1;
-		//		/* envoi des rangs aux processus dsm */
-		//		int *buf2;
-		//		buf2 = &connect_info.rank;
-		//		write(FD,buf2, len+1 );
-		//		printf("le rang du processus \n" );
-		//		*buf[1] =*buf2;
-		//		/* envoi des infos de connexion aux processus */
-		//
-		//		int *buf3 ;
-		//		buf3 = &connect_info.IPaddr;
-		//		*buf[2] = *buf3;
-		//		write(FD,buf3, len+1);
-		//
-		//		int *buf4 ;
-		//		buf4 = connect_info.port;
-		//		write(FD,buf4, len+1);
-		//		printf("informations de connexion\n" );
-		//		*buf[3] = *buf4;
-		//
+		/* envoi du nombre de processus aux processus dsm*/
+		// Deja fait. Le nombre de processus est une variable envoyé dès le lancement de dsmwrap.
+
+		/* envoi des infos de connexion aux processus */
+
+		for(i=0;i<num_procs;i++){
+
+		}
+
 		//		/* gestion des E/S : on recupere les caracteres */
 		//		/* sur les tubes de redirection de stdout/stderr */
 		//		/*while(1)
@@ -353,7 +363,7 @@ int main(int argc, char *argv[]){
 		//		 */
 		//
 		//		/* on attend les processus fils */
-		//
+
 		//		/* on ferme les descripteurs proprement */
 		//
 		//		/* on ferme la socket d'ecoute */

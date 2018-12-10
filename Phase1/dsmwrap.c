@@ -3,7 +3,7 @@
 char buffer[512];
 const int buff_size = 512;
 
-void do_read(int client_sock,int server_sock){
+void do_read(int client_sock){
 
 	strcat(buffer,"\0");
 	int bit_rcv;
@@ -17,12 +17,12 @@ void do_read(int client_sock,int server_sock){
 //	fflush(stdout);
 
 	if(bit_rcv==-1){
-		perror("recv");close(server_sock); exit(EXIT_FAILURE);
+		perror("recv");close(client_sock); exit(EXIT_FAILURE);
 	}
 
 	bit_rcv = recv(client_sock,buffer,*size_txt,0);
 	if(bit_rcv==-1){
-		perror("recv");close(server_sock); exit(EXIT_FAILURE);
+		perror("recv");close(client_sock); exit(EXIT_FAILURE);
 	}
 
 //	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
@@ -62,6 +62,7 @@ int main(int argc, char **argv){
 
 	int client_sock;
 	int j;
+	int num_procs=atoi(argv[3]);
 
 	char* port = argv[2];
 	char* ip_addr = argv[1];
@@ -69,22 +70,21 @@ int main(int argc, char **argv){
 	char h_name[128] ;
 
 	pid_t pid;
+	server_info my_ser_info;
 
 	gethostname(h_name,128);
 	pid = getpid();
-
-
 
 	printf("DSMWRAP\n");
 	printf(" argc: %d\n",argc);
 	printf(" hostname: %s\n",h_name);
 	fflush(stdout);
 
-	//	for(j=0; j<argc; j++){
-	//		printf(" arg[%d]: %s\n",j,(char*)argv[j]);
-	//		fflush(stdout);
-	//
-	//	}
+//		for(j=0; j<argc; j++){
+//			printf(" arg[%d]: %s\n",j,(char*)argv[j]);
+//			fflush(stdout);
+//
+//		}
 
 	/* processus intermediaire pour "nettoyer" */
 	/* la liste des arguments qu'on va passer */
@@ -93,15 +93,12 @@ int main(int argc, char **argv){
 		true_arg[j] = argv[j+3];
 		//		printf(" true_arg[%d]: %s\n",j,(char*)true_arg[j]);
 		//		fflush(stdout);
-
 	}
 
 	/* creation d'une socket pour se connecter au */
 	/* au lanceur et envoyer/recevoir les infos */
 	/* necessaires pour la phase dsm_init */
 
-
-	//init_server_addr(ip_addr,port,server_sock);
 	client_sock = do_connect(ip_addr,port);
 
 	/* Envoi du nom de machine au lanceur */
@@ -120,10 +117,17 @@ int main(int argc, char **argv){
 
 	/* Creation de la socket d'ecoute pour les */
 	/* connexions avec les autres processus dsm */
+ 	int serv_sock = creer_socket(num_procs,&my_ser_info,"8081");
 
 	/* Envoi du numero de port au lanceur */
 	/* pour qu'il le propage à tous les autres */
 	/* processus dsm */
+
+ 	sprintf(buffer, "%d",my_ser_info.port);
+ 	do_write(client_sock);
+
+ 	strcpy(buffer,my_ser_info.ip_addr);
+ 	do_write(client_sock);
 
 	/* on execute la bonne commande */
 	return 0;

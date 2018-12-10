@@ -50,7 +50,7 @@ int do_connect(char* ip_addr,char* port){
 }
 
 
-int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour propriétés bloquantes ou non bloquantes
+int creer_socket(/*int prop*/int num_procs, server_info *s_info,char* port) //prop pour propriétés bloquantes ou non bloquantes
 {
 	int sock = 0;
 	struct sockaddr_in *sin;
@@ -77,7 +77,7 @@ int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour pro
 
 
 	gethostname(h_name, 128);
-	s = getaddrinfo(h_name,"8080", &hints, &result);
+	s = getaddrinfo(h_name,port, &hints, &result);
 
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
@@ -88,8 +88,8 @@ int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour pro
 		sock = socket(info->ai_family, info->ai_socktype,
 				info->ai_protocol);
 		sin = (struct sockaddr_in*)info->ai_addr;
-		f_info->port = ntohs(sin->sin_port);
-		f_info->ip_addr = inet_ntoa(sin->sin_addr);
+		s_info->port = ntohs(sin->sin_port);
+		s_info->ip_addr = inet_ntoa(sin->sin_addr);
 		if (sock == -1)
 			continue;
 
@@ -101,7 +101,7 @@ int creer_socket(/*int prop*/int num_procs, father_info *f_info) //prop pour pro
 
 	freeaddrinfo(result);
 
-	int lst = listen(sock, DSM_NODE_NUM);
+	int lst = listen(sock, num_procs);
 	if ( lst== -1 ){
 		perror("listen");
 		exit(0);

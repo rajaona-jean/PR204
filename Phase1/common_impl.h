@@ -24,11 +24,11 @@ int  DSM_NODE_NUM ;
 #define ERROR_EXIT(str) {perror(str);exit(EXIT_FAILURE);}
 
 
-struct father_info {
+struct server_info {
    char* ip_addr;
    int port;
 };
-typedef struct father_info father_info;
+typedef struct server_info server_info;
 
 /* definition du type des infos */
 /* de connexion des processus dsm */
@@ -36,7 +36,8 @@ struct dsm_proc_conn  {
    int rank;
    /* a completer */
    char* ip_addr;
-   int* port;
+   int port;
+   char* name;
 };
 typedef struct dsm_proc_conn dsm_proc_conn_t; 
 
@@ -51,12 +52,10 @@ typedef struct dsm_proc dsm_proc_t;
 
 
 
-int creer_socket(int num_procs, father_info *f_info);
+int creer_socket(/*int prop*/int num_procs, server_info *f_info,char* port);
 
 //int do_socket();
 //void init_server_addr(char* addr,int port,struct sockaddr_in server_sock);
 
 void setsock(int socket_fd);
 int do_connect(char* ip_addr,char* port);
-void do_read(int client_sock,int server_sock);
-void do_write(int client_sock);
