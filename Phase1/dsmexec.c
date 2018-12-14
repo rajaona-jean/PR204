@@ -116,8 +116,8 @@ void do_read(int client_sock){
 
 	bit_rcv = recv(client_sock,size_txt,sizeof(int),0);
 
-	//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
-	//	fflush(stdout);
+	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
+	fflush(stdout);
 
 	if(bit_rcv==-1){
 		perror("recv");close(client_sock); exit(EXIT_FAILURE);
@@ -128,8 +128,8 @@ void do_read(int client_sock){
 		perror("recv");close(client_sock); exit(EXIT_FAILURE);
 	}
 
-	//		printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
-	//		fflush(stdout);
+	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
+	fflush(stdout);
 
 	free(size_txt);
 }
@@ -145,16 +145,16 @@ void do_write(int client_sock){
 
 	bit_sent = send(client_sock,size_txt,sizeof(int),0);
 
-	//	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
-	//	fflush(stdout);
+	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
+	fflush(stdout);
 
 	bit_sent = send(client_sock,buffer,*size_txt,0);
 	if(bit_sent==-1){
 		perror("send");close(client_sock);exit(EXIT_FAILURE);
 	}
 
-	//	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
-	//	fflush(stdout);
+	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
+	fflush(stdout);
 
 	memset(buffer,'\0',buff_size);
 	free(size_txt);
@@ -173,7 +173,7 @@ int find_rank(char* machine_name){
 int main(int argc, char *argv[]){
 	char* path = "./machines.txt"; //argv[1];
 	char* int_to_char=malloc(sizeof(int));
-
+	int status;
 	struct sigaction * sig_zombie = malloc(sizeof(struct sigaction));
 
 	int num_procs = 0;
@@ -226,7 +226,7 @@ int main(int argc, char *argv[]){
 			tube_stderr[0][i] = 4;
 			tube_stderr[1][i] = 5;
 
-			int status;
+
 			pid[i] = fork();
 
 
@@ -271,13 +271,18 @@ int main(int argc, char *argv[]){
 				close(tube_stdout[1][i]);
 				close(tube_stderr[1][i]);
 				num_procs_creat++;
-				waitpid(pid[i],&status,0);
 			}
 		}
 
 
 		struct sockaddr_in sin;
 		dsm_proc_t info_process_distant[num_procs];
+
+		for(i=0;i<num_procs;i++){
+			info_process_distant[i].connect_info.name = malloc(buff_size*sizeof(char));
+			info_process_distant[i].connect_info.ip_addr = malloc(buff_size*sizeof(char));
+		}
+
 		int rank;
 		int size = sizeof(sin);
 		int len;
@@ -294,7 +299,7 @@ int main(int argc, char *argv[]){
 			fds[i].events = POLLIN;
 
 
-		for(i = 1; i <= num_procs ; i++){
+		for(i = 0; i < num_procs ; i++){
 			/* on accepte les connexions des processus dsm */
 			csock = accept(FD,(struct sockaddr*)&sin,(socklen_t*) &size);
 
@@ -326,9 +331,10 @@ int main(int argc, char *argv[]){
 
 			info_process_distant[i].connect_info.rank = rank;
 			info_process_distant[i].pid = pid_proc_dist;
-			info_process_distant[i].connect_info.name = name;
+			//info_process_distant[i].connect_info.name = name;
+			strcpy(info_process_distant[i].connect_info.name, name);
 
-			printf(" machine name: %s \n rank: %d\n pid: %d\n",info_process_distant[i].connect_info.name,info_process_distant[i].connect_info.rank,info_process_distant[i].pid = pid_proc_dist);
+			printf("DSMEXEC.C: machine name: %s \n rank: %d\n pid: %d\n",info_process_distant[i].connect_info.name,info_process_distant[i].connect_info.rank,info_process_distant[i].pid = pid_proc_dist);
 			fflush(stdout);
 
 			/* On recupere le numero de port de la socket */
@@ -337,7 +343,7 @@ int main(int argc, char *argv[]){
 			info_process_distant[i].connect_info.port = atoi(buffer);
 
 			do_read(csock);
-			info_process_distant[i].connect_info.ip_addr = buffer;
+			strcpy(info_process_distant[i].connect_info.ip_addr,buffer);
 
 
 		}
@@ -346,9 +352,28 @@ int main(int argc, char *argv[]){
 		// Deja fait. Le nombre de processus est une variable envoyé dès le lancement de dsmwrap.
 
 		/* envoi des infos de connexion aux processus */
+		for(i =0;i<num_procs;i++){
+			csock = fds[i].fd;
+			sprintf(buffer, "%d",info_process_distant[i].pid);
+			do_write(csock);
+
+			sprintf(buffer, "%d",info_process_distant[i].connect_info.rank);
+			do_write(csock);
+
+			strcpy(buffer,info_process_distant[i].connect_info.name);
+			do_write(csock);
+
+			strcpy(buffer,info_process_distant[i].connect_info.ip_addr);
+			do_write(csock);
+
+			sprintf(buffer, "%d",info_process_distant[i].connect_info.port);
+			do_write(csock);
+		}
+		waitpid(pid[i],&status,0);
 
 		for(i=0;i<num_procs;i++){
-
+			free(info_process_distant[i].connect_info.name);
+			free(info_process_distant[i].connect_info.ip_addr);
 		}
 
 		//		/* gestion des E/S : on recupere les caracteres */

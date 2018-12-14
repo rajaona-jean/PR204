@@ -112,6 +112,41 @@ int creer_socket(/*int prop*/int num_procs, server_info *s_info,char* port) //pr
 	return sock;
 }
 
+void* do_read_struct(int client_sock, void* objet){
+
+	int bit_rcv;
+	void* objet_recu;
+
+
+
+
+	bit_rcv = recv(client_sock,objet_recu,sizeof(objet),0);
+
+	//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
+	//	fflush(stdout);
+
+	if(bit_rcv==-1){
+		perror("recv");close(client_sock); exit(EXIT_FAILURE);
+	}
+
+	return objet;
+}
+
+void do_write_struct(int client_sock, void* objet){
+
+	int bit_sent = 0;
+	int taille = sizeof(objet);
+
+	while(bit_sent<taille)
+		bit_sent = bit_sent + send(client_sock,objet,sizeof(objet),0);
+
+	//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
+	//	fflush(stdout);
+
+	if(bit_sent==-1){
+		perror("send");close(client_sock); exit(EXIT_FAILURE);
+	}
+}
 
 /* Vous pouvez ecrire ici toutes les fonctions */
 /* qui pourraient etre utilisees par le lanceur */

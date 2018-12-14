@@ -59,3 +59,5 @@ int creer_socket(/*int prop*/int num_procs, server_info *f_info,char* port);
 
 void setsock(int socket_fd);
 int do_connect(char* ip_addr,char* port);
+void do_write_struct(int client_sock, void* objet);
+void* do_read_struct(int client_sock, void* objet);

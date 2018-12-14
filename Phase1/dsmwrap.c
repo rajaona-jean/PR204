@@ -13,8 +13,8 @@ void do_read(int client_sock){
 
 	bit_rcv = recv(client_sock,size_txt,sizeof(int),0);
 
-//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
-//	fflush(stdout);
+	printf(" dsmwrap.c: do_read: 115: size_txt: %d\n",*size_txt);
+	fflush(stdout);
 
 	if(bit_rcv==-1){
 		perror("recv");close(client_sock); exit(EXIT_FAILURE);
@@ -25,8 +25,8 @@ void do_read(int client_sock){
 		perror("recv");close(client_sock); exit(EXIT_FAILURE);
 	}
 
-//	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
-//	fflush(stdout);
+	printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
+	fflush(stdout);
 
 	free(size_txt);
 }
@@ -42,16 +42,16 @@ void do_write(int client_sock){
 
 	bit_sent = send(client_sock,size_txt,sizeof(int),0);
 
-//	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
-//	fflush(stdout);
+	printf(" dsmwrap.c: do_write: 141: size_txt: %d\n",*size_txt);
+	fflush(stdout);
 
 	bit_sent = send(client_sock,buffer,*size_txt,0);
 	if(bit_sent==-1){
 		perror("send");close(client_sock);exit(EXIT_FAILURE);
 	}
 
-//	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
-//	fflush(stdout);
+	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
+	fflush(stdout);
 
 	memset(buffer,'\0',buff_size);
 	free(size_txt);
@@ -62,6 +62,7 @@ int main(int argc, char **argv){
 
 	int client_sock;
 	int j;
+	int i;
 	int num_procs=atoi(argv[3]);
 
 	char* port = argv[2];
@@ -71,6 +72,14 @@ int main(int argc, char **argv){
 
 	pid_t pid;
 	server_info my_ser_info;
+	dsm_proc_t info_all_proc[num_procs];
+
+	for(i=0;i<num_procs;i++){
+		info_all_proc[i].connect_info.name = malloc(buff_size*sizeof(char));
+		info_all_proc[i].connect_info.ip_addr = malloc(buff_size*sizeof(char));
+	}
+
+
 
 	gethostname(h_name,128);
 	pid = getpid();
@@ -129,6 +138,29 @@ int main(int argc, char **argv){
  	strcpy(buffer,my_ser_info.ip_addr);
  	do_write(client_sock);
 
+ 	// on recupere les infos des autres processus
+ 	do_read(client_sock);
+ 	info_all_proc[0].pid = atoi(buffer);
+
+ 	do_read(client_sock);
+ 	info_all_proc[0].connect_info.rank = atoi(buffer);
+
+ 	do_read(client_sock);
+ 	strcpy(info_all_proc[0].connect_info.name, buffer);
+
+ 	do_read(client_sock);
+ 	strcpy(info_all_proc[0].connect_info.ip_addr, buffer);
+
+ 	do_read(client_sock);
+ 	info_all_proc[0].connect_info.port = atoi(buffer);
+
+	printf("DSMWRAP.C:\n\n machine name: %s \n rank: %d\n pid: %d\n ip: %s\n port: %d\n",info_all_proc[0].connect_info.name,info_all_proc[0].connect_info.rank,info_all_proc[0].pid,info_all_proc[0].connect_info.ip_addr,info_all_proc[0].connect_info.port);
+	fflush(stdout);
+
+	for(i=0;i<num_procs;i++){
+		free(info_all_proc[i].connect_info.name);
+		free(info_all_proc[i].connect_info.ip_addr);
+	}
 	/* on execute la bonne commande */
 	return 0;
 }
