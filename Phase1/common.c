@@ -9,9 +9,26 @@ void setsock(int socket_fd){
 	}
 }
 
+void just_connect(int client_socket,char* ip_addr,int port){
+	struct sockaddr_in server_sock;
+
+	memset(&server_sock,'\0',sizeof(struct sockaddr_in));
+	server_sock.sin_family = AF_INET;
+	server_sock.sin_port = htons(port);
+	server_sock.sin_addr.s_addr = inet_addr(ip_addr);
+
+	int err = connect(client_socket,(struct sockaddr *)&server_sock,sizeof(struct sockaddr_in));
+	if(err == -1){
+		perror("connect");close(client_socket);exit(EXIT_FAILURE);
+	}
+	else{
+		printf(" Connecting to server... done!\n");
+		fflush(stdout);
+	}
+}
 
 int do_connect(char* ip_addr,char* port){
-	int client_sock = 0;
+	int client_sock = -1;
 	struct addrinfo hints;
 	struct addrinfo *server,*result;
 	int s; // getaddrinfo return
@@ -28,7 +45,6 @@ int do_connect(char* ip_addr,char* port){
 
 
 	s = getaddrinfo(ip_addr,port, &hints, &result);
-
 	if (s != 0) {
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
@@ -37,11 +53,12 @@ int do_connect(char* ip_addr,char* port){
 	for (server = result; server != NULL; server = server->ai_next) {
 		client_sock = socket(server->ai_family, server->ai_socktype,
 				server->ai_protocol);
+		setsock(client_sock);
 		if (client_sock == -1)
 			continue;
 
 		if ( connect(client_sock, server->ai_addr, server->ai_addrlen) != -1)
-            break;                  /* Success */
+			break;                  /* Success */
 
 		close(client_sock);
 	}
@@ -87,6 +104,7 @@ int creer_socket(/*int prop*/int num_procs, server_info *s_info,char* port) //pr
 	for (info = result; info != NULL; info = info->ai_next) {
 		sock = socket(info->ai_family, info->ai_socktype,
 				info->ai_protocol);
+		setsock(sock);
 		sin = (struct sockaddr_in*)info->ai_addr;
 		s_info->port = ntohs(sin->sin_port);
 		s_info->ip_addr = inet_ntoa(sin->sin_addr);
@@ -98,55 +116,16 @@ int creer_socket(/*int prop*/int num_procs, server_info *s_info,char* port) //pr
 
 		close(sock);
 	}
-
 	freeaddrinfo(result);
 
 	int lst = listen(sock, num_procs);
 	if ( lst== -1 ){
 		perror("listen");
 		exit(0);
-	}else{
-		printf("listen ok\n");
 	}
-
 	return sock;
 }
 
-void* do_read_struct(int client_sock, void* objet){
-
-	int bit_rcv;
-	void* objet_recu;
-
-
-
-
-	bit_rcv = recv(client_sock,objet_recu,sizeof(objet),0);
-
-	//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
-	//	fflush(stdout);
-
-	if(bit_rcv==-1){
-		perror("recv");close(client_sock); exit(EXIT_FAILURE);
-	}
-
-	return objet;
-}
-
-void do_write_struct(int client_sock, void* objet){
-
-	int bit_sent = 0;
-	int taille = sizeof(objet);
-
-	while(bit_sent<taille)
-		bit_sent = bit_sent + send(client_sock,objet,sizeof(objet),0);
-
-	//	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
-	//	fflush(stdout);
-
-	if(bit_sent==-1){
-		perror("send");close(client_sock); exit(EXIT_FAILURE);
-	}
-}
 
 /* Vous pouvez ecrire ici toutes les fonctions */
 /* qui pourraient etre utilisees par le lanceur */

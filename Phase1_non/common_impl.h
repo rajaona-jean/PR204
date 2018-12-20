@@ -15,31 +15,17 @@
 #include <netdb.h>
 #include <poll.h>
 
-#define BUFF_SIZE 512;
-volatile int  DSM_NODE_NUM ;
-
-
 /* autres includes (eventuellement) */
 
 #define ERROR_EXIT(str) {perror(str);exit(EXIT_FAILURE);}
-
-
-struct server_info {
-   char* ip_addr;
-   int port;
-};
-typedef struct server_info server_info;
 
 /* definition du type des infos */
 /* de connexion des processus dsm */
 struct dsm_proc_conn  {
    int rank;
    /* a completer */
-   char* ip_addr;
-   int port;
-   char* name;
-   int write_sock;
-   int read_sock;
+   struct hostent IPaddr;
+   int *port; 
 };
 typedef struct dsm_proc_conn dsm_proc_conn_t; 
 
@@ -54,11 +40,10 @@ typedef struct dsm_proc dsm_proc_t;
 
 
 
-int creer_socket(/*int prop*/int num_procs, server_info *f_info,char* port);
+int creer_socket(int num_procs, int *port_num);
 
-//int do_socket();
-//void init_server_addr(char* addr,int port,struct sockaddr_in server_sock);
 
+void init_server_addr(char* addr,int port,struct sockaddr_in server_sock);
 void setsock(int socket_fd);
-int do_connect(char* ip_addr,char* port);
-void just_connect(int client_socket,char* ip_addr,int port);
+void do_connect(int client_socket,struct sockaddr_in server_sock);
+int do_socket();

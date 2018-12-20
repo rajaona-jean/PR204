@@ -106,32 +106,41 @@ void sigchld_handler(int sig)
 
 }
 
-void do_read(int client_sock){
+int do_read(int client_sock){
 
 	strcat(buffer,"\0");
-	int bit_rcv;
+	int bit_rcv=0;
 	int *size_txt = malloc(sizeof(int));
 	*size_txt = 0;
 	memset(buffer,'\0',buff_size);
 
-	bit_rcv = recv(client_sock,size_txt,sizeof(int),0);
+	do{
+		bit_rcv += recv(client_sock,size_txt+bit_rcv,sizeof(int)-bit_rcv,0);
+	}while(bit_rcv != sizeof(int));
 
-	printf(" dsmexec.c: do_read: 115: size_txt: %d\n",*size_txt);
-	fflush(stdout);
+	//	printf(" dsmwrap.c: do_read: 115: size_txt: %d\n",*size_txt);
+	//	fflush(stdout);
 
 	if(bit_rcv==-1){
-		perror("recv");close(client_sock); exit(EXIT_FAILURE);
+		//perror("recv");
+		close(client_sock); return 1;
 	}
 
-	bit_rcv = recv(client_sock,buffer,*size_txt,0);
+	bit_rcv = 0;
+	do{
+		bit_rcv += recv(client_sock,buffer+bit_rcv,*size_txt-bit_rcv,0);
+	}while(bit_rcv != *size_txt);
+
 	if(bit_rcv==-1){
-		perror("recv");close(client_sock); exit(EXIT_FAILURE);
+		//perror("recv");
+		close(client_sock); return 1;
 	}
 
-	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
-	fflush(stdout);
+//			printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
+//			fflush(stdout);
 
 	free(size_txt);
+	return 0;
 }
 
 void do_write(int client_sock){
@@ -142,19 +151,25 @@ void do_write(int client_sock){
 	*size_txt = strlen(buffer);
 	int bit_sent = 0;
 
+	do{
+		bit_sent += send(client_sock,size_txt+bit_sent,sizeof(int)-bit_sent,0);
+	}while(bit_sent != sizeof(int));
 
-	bit_sent = send(client_sock,size_txt,sizeof(int),0);
+	//	printf(" dsmwrap.c: do_write: 141: size_txt: %d\n",*size_txt);
+	//	fflush(stdout);
 
-	printf(" dsmexec.c: do_write: 141: size_txt: %d\n",*size_txt);
-	fflush(stdout);
+	bit_sent = 0;
 
-	bit_sent = send(client_sock,buffer,*size_txt,0);
+	do{
+		bit_sent += send(client_sock,buffer+bit_sent,*size_txt-bit_sent,0);
+	}while(bit_sent != *size_txt);
+
 	if(bit_sent==-1){
 		perror("send");close(client_sock);exit(EXIT_FAILURE);
 	}
 
-	printf(" dsmexec.c: do_write: 150: bufffer: %s\n", buffer);
-	fflush(stdout);
+//	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
+//	fflush(stdout);
 
 	memset(buffer,'\0',buff_size);
 	free(size_txt);
@@ -184,6 +199,7 @@ int main(int argc, char *argv[]){
 		usage();
 	} else {
 		int i;
+		int j;
 
 		/* Mise en place d'un traitant pour recuperer les fils zombies*/
 		/* XXX.sa_handler = sigchld_handler; */
@@ -325,8 +341,8 @@ int main(int argc, char *argv[]){
 
 			/* On recupere le pid du processus distant  */
 			do_read(csock);
-			printf(" PID: %s\n",buffer);
-			fflush(stdout);
+			//			printf(" PID: %s\n",buffer);
+			//			fflush(stdout);
 			pid_proc_dist = atoi(buffer);
 
 			info_process_distant[i].connect_info.rank = rank;
@@ -334,8 +350,8 @@ int main(int argc, char *argv[]){
 			//info_process_distant[i].connect_info.name = name;
 			strcpy(info_process_distant[i].connect_info.name, name);
 
-			printf("DSMEXEC.C: machine name: %s \n rank: %d\n pid: %d\n",info_process_distant[i].connect_info.name,info_process_distant[i].connect_info.rank,info_process_distant[i].pid = pid_proc_dist);
-			fflush(stdout);
+			//			printf("DSMEXEC.C: machine name: %s \n rank: %d\n pid: %d\n",info_process_distant[i].connect_info.name,info_process_distant[i].connect_info.rank,info_process_distant[i].pid = pid_proc_dist);
+			//			fflush(stdout);
 
 			/* On recupere le numero de port de la socket */
 			/* d'ecoute des processus distants */
@@ -352,29 +368,28 @@ int main(int argc, char *argv[]){
 		// Deja fait. Le nombre de processus est une variable envoyé dès le lancement de dsmwrap.
 
 		/* envoi des infos de connexion aux processus */
-		for(i =0;i<num_procs;i++){
-			csock = fds[i].fd;
-			sprintf(buffer, "%d",info_process_distant[i].pid);
-			do_write(csock);
+		for(j=0;j<num_procs;j++){
+			csock = fds[j].fd;
+			for(i=0;i<num_procs;i++){
+				sprintf(buffer, "%d",info_process_distant[i].pid);
+				do_write(csock);
 
-			sprintf(buffer, "%d",info_process_distant[i].connect_info.rank);
-			do_write(csock);
+				sprintf(buffer, "%d",info_process_distant[i].connect_info.rank);
+				do_write(csock);
 
-			strcpy(buffer,info_process_distant[i].connect_info.name);
-			do_write(csock);
+				strcpy(buffer,info_process_distant[i].connect_info.name);
+				do_write(csock);
 
-			strcpy(buffer,info_process_distant[i].connect_info.ip_addr);
-			do_write(csock);
+				strcpy(buffer,info_process_distant[i].connect_info.ip_addr);
+				do_write(csock);
 
-			sprintf(buffer, "%d",info_process_distant[i].connect_info.port);
-			do_write(csock);
+				sprintf(buffer, "%d",info_process_distant[i].connect_info.port);
+				do_write(csock);
+			}
 		}
-		waitpid(pid[i],&status,0);
 
-		for(i=0;i<num_procs;i++){
-			free(info_process_distant[i].connect_info.name);
-			free(info_process_distant[i].connect_info.ip_addr);
-		}
+
+
 
 		//		/* gestion des E/S : on recupere les caracteres */
 		//		/* sur les tubes de redirection de stdout/stderr */
@@ -388,10 +403,17 @@ int main(int argc, char *argv[]){
 		//		 */
 		//
 		//		/* on attend les processus fils */
-
+		for(i=0;i<num_procs;i++){
+			waitpid(pid[i],&status,0);
+		}
 		//		/* on ferme les descripteurs proprement */
 		//
 		//		/* on ferme la socket d'ecoute */
+
+		for(i=0;i<num_procs;i++){
+			free(info_process_distant[i].connect_info.name);
+			free(info_process_distant[i].connect_info.ip_addr);
+		}
 	}
 	exit(EXIT_SUCCESS);
 }
