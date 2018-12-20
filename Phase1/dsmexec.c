@@ -136,8 +136,8 @@ int do_read(int client_sock){
 		close(client_sock); return 1;
 	}
 
-//			printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
-//			fflush(stdout);
+	//			printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
+	//			fflush(stdout);
 
 	free(size_txt);
 	return 0;
@@ -168,8 +168,8 @@ void do_write(int client_sock){
 		perror("send");close(client_sock);exit(EXIT_FAILURE);
 	}
 
-//	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
-//	fflush(stdout);
+	//	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
+	//	fflush(stdout);
 
 	memset(buffer,'\0',buff_size);
 	free(size_txt);
@@ -403,13 +403,16 @@ int main(int argc, char *argv[]){
 		//		 */
 		//
 		//		/* on attend les processus fils */
+
 		for(i=0;i<num_procs;i++){
 			waitpid(pid[i],&status,0);
 		}
 		//		/* on ferme les descripteurs proprement */
-		//
+		for(i=0;i<num_procs;i++){
+			close(fds[i].fd);
+		}
 		//		/* on ferme la socket d'ecoute */
-
+		close(FD);
 		for(i=0;i<num_procs;i++){
 			free(info_process_distant[i].connect_info.name);
 			free(info_process_distant[i].connect_info.ip_addr);
