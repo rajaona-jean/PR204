@@ -26,6 +26,8 @@ int do_read(int client_sock){
 	bit_rcv = 0;
 	do{
 		bit_rcv += recv(client_sock,buffer+bit_rcv,*size_txt-bit_rcv,0);
+//		printf(" BUFFER !!!!!!!!!!!!!!!!! %s\n",buffer);
+//		fflush(stdout);
 	}while(bit_rcv != *size_txt);
 
 	if(bit_rcv==-1){
@@ -33,8 +35,8 @@ int do_read(int client_sock){
 		close(client_sock); return 1;
 	}
 
-//			printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
-//			fflush(stdout);
+//	printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
+//	fflush(stdout);
 
 	free(size_txt);
 	return 0;
@@ -68,7 +70,6 @@ void do_write(int client_sock){
 //	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
 //	fflush(stdout);
 
-	memset(buffer,'\0',buff_size);
 	free(size_txt);
 }
 
@@ -80,13 +81,14 @@ int do_wait_co(int client_sock){ //Verification que le accept à fonctionné, en
 
 	bit_rcv = recv(client_sock,size_txt,sizeof(int),MSG_DONTWAIT);
 
-	//	printf(" dsmwrap.c: do_read: 115: size_txt: %d\n",*size_txt);
-	//	fflush(stdout);
+//		printf(" dsmwrap.c: do_wait_co: size_txt: %d\n",*size_txt);
+//		fflush(stdout);
 
 	if(bit_rcv==-1){
 		//perror("recv");
 		close(client_sock); return 1;
 	}
+	free(size_txt);
 	return 0;
 }
 
@@ -97,8 +99,8 @@ int do_check_co(int client_sock){ // Verification que le connect à fonctionné,
 
 	bit_sent = send(client_sock,size_txt,sizeof(int),MSG_DONTWAIT);
 
-	//	printf(" dsmwrap.c: do_read: 115: size_txt: %d\n",*size_txt);
-	//	fflush(stdout);
+//		printf(" dsmwrap.c: do_check_co: size_txt: %d\n",*size_txt);
+//		fflush(stdout);
 
 	if(bit_sent==-1){
 		//perror("recv");
@@ -323,7 +325,7 @@ int main(int argc, char **argv){
 
 //			printf(" ip_addr: %s, port: %s \n",ip_addr,port);
 //			fflush(stdout);
-//			printf(" WAIT CO: %s ; connect: socket: %d\n",h_name,fds[i].fd);
+//			printf(" WAIT CO: by %s ;\n",h_name);
 //			fflush(stdout);
 
 			erreur = 1;
@@ -332,12 +334,15 @@ int main(int argc, char **argv){
 //				fflush(stdout);
 				client_sock = do_connect(ip_addr,port);
 				erreur = do_check_co(client_sock);
-				//				printf(" client_socket : %d ; erreur: %d\n",client_sock,erreur);
-				//				fflush(stdout);
+				if(erreur == 1){
+					close(client_sock);
+				}
+//				printf(" client_socket : %d ; erreur: %d\n",client_sock,erreur);
+//				fflush(stdout);
 			}
 
 			fill_write_socket(client_sock, info_all_proc, i);
-			printf(" connected : %d!!!\n",client_sock);
+			printf(" %s connected to %s: %d!!!\n",h_name,info_cur_proc.connect_info.name,client_sock);
 			fflush(stdout);
 
 			sprintf(buffer, " HELLO my name is %s, i am connected to you: %s\n",h_name,info_cur_proc.connect_info.name);
@@ -345,17 +350,17 @@ int main(int argc, char **argv){
 		}
 		else{ // j'accepte les connexions
 			for(j=0;j<num_procs-1;j++){
-//				printf(" name : %s ; ATENTE\n",h_name);
+//				printf(" name : %s ; ATENTE %d\n",h_name,j);
 //				fflush(stdout);
 				client_sock = accept(serv_sock,(struct sockaddr*)&sin,(socklen_t*) &size_sin);
 				do_wait_co(client_sock); // Valide la connexion
 				fds[i].fd = client_sock;
-//				printf(" accepted !!!\n");
+//				printf(" i am %s, i have accepted someone!!!\n",h_name);
 //				fflush(stdout);
 				do_read(client_sock);
 				fill_read_socket(client_sock,info_all_proc,i);
-				printf(" buffer: %s\n",buffer);
-				fflush(stdout);
+//				printf(" buffer: %s\n",buffer);
+//				fflush(stdout);
 			}
 		}
 
@@ -365,6 +370,12 @@ int main(int argc, char **argv){
 		close(fds[i].fd);
 	}
 
+	for(i=0;i<num_procs;i++){
+		info_cur_proc = info_rank(i,info_all_proc);
+		if(strcmp(h_name,info_cur_proc.connect_info.name)!=0){
+			close(info_cur_proc.connect_info.write_sock);
+		}
+	}
 
 	for(i=0;i<num_procs;i++){
 		free(info_all_proc[i].connect_info.name);
