@@ -195,7 +195,7 @@ int main(int argc, char *argv[]){
 	num_procs = nb_of_user(path);
 	pid_t pid[num_procs];
 
-	if (argc < 1){
+	if (argc < 3){
 		usage();
 	} else {
 		int i;
@@ -275,8 +275,11 @@ int main(int argc, char *argv[]){
 				strcpy(newargv[4],int_to_char);
 				sprintf(int_to_char, "%d", num_procs);
 				strcpy(newargv[5], int_to_char);
+
+				free(int_to_char);
 				for(j=1; j<=argc; j++){
 					newargv[j+5]=argv[j];
+//					printf(" arg[%d]: %s\n",j+5,newargv[j+5]);
 				}
 
 				execvp("ssh",newargv);

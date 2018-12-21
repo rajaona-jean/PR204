@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
    
    wd_ptr = getcwd(str,1024);
    fprintf(stdout,"Working dir is %s\n",str);
+   fflush(stdout);
    
    fprintf(stdout,"Number of args : %i\n", argc);
    for(i= 0; i < argc ; i++)

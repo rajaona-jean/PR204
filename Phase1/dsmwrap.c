@@ -26,8 +26,8 @@ int do_read(int client_sock){
 	bit_rcv = 0;
 	do{
 		bit_rcv += recv(client_sock,buffer+bit_rcv,*size_txt-bit_rcv,0);
-//		printf(" BUFFER !!!!!!!!!!!!!!!!! %s\n",buffer);
-//		fflush(stdout);
+		//		printf(" BUFFER !!!!!!!!!!!!!!!!! %s\n",buffer);
+		//		fflush(stdout);
 	}while(bit_rcv != *size_txt);
 
 	if(bit_rcv==-1){
@@ -35,8 +35,8 @@ int do_read(int client_sock){
 		close(client_sock); return 1;
 	}
 
-//	printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
-//	fflush(stdout);
+	//	printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
+	//	fflush(stdout);
 
 	free(size_txt);
 	return 0;
@@ -67,8 +67,8 @@ void do_write(int client_sock){
 		perror("send");close(client_sock);exit(EXIT_FAILURE);
 	}
 
-//	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
-//	fflush(stdout);
+	//	printf(" dsmwrap.c: do_write: 150: bufffer: %s\n", buffer);
+	//	fflush(stdout);
 
 	free(size_txt);
 }
@@ -81,8 +81,8 @@ int do_wait_co(int client_sock){ //Verification que le accept à fonctionné, en
 
 	bit_rcv = recv(client_sock,size_txt,sizeof(int),MSG_DONTWAIT);
 
-//		printf(" dsmwrap.c: do_wait_co: size_txt: %d\n",*size_txt);
-//		fflush(stdout);
+	//		printf(" dsmwrap.c: do_wait_co: size_txt: %d\n",*size_txt);
+	//		fflush(stdout);
 
 	if(bit_rcv==-1){
 		//perror("recv");
@@ -99,8 +99,8 @@ int do_check_co(int client_sock){ // Verification que le connect à fonctionné,
 
 	bit_sent = send(client_sock,size_txt,sizeof(int),MSG_DONTWAIT);
 
-//		printf(" dsmwrap.c: do_check_co: size_txt: %d\n",*size_txt);
-//		fflush(stdout);
+	//		printf(" dsmwrap.c: do_check_co: size_txt: %d\n",*size_txt);
+	//		fflush(stdout);
 
 	if(bit_sent==-1){
 		//perror("recv");
@@ -209,6 +209,7 @@ int main(int argc, char **argv){
 	char* port = argv[2];
 	char* ip_addr = argv[1];
 	char* true_arg[argc];
+	char* exec_path;
 	char h_name[128] ;
 
 	pid_t pid;
@@ -242,21 +243,25 @@ int main(int argc, char **argv){
 	printf(" hostname: %s\n",h_name);
 	fflush(stdout);
 
-	//		for(j=0; j<argc; j++){
-	//			printf(" arg[%d]: %s\n",j,(char*)argv[j]);
-	//			fflush(stdout);
-	//
-	//		}
+	for(j=0; j<argc; j++){
+		printf(" arg[%d]: %s\n",j,argv[j]);
+		fflush(stdout);
+
+	}
 
 	/* processus intermediaire pour "nettoyer" */
 	/* la liste des arguments qu'on va passer */
 	/* a la commande a executer vraiment */
-	for(j=0; j<argc-3; j++){
-		true_arg[j] = argv[j+3];
-		//		printf(" true_arg[%d]: %s\n",j,(char*)true_arg[j]);
-		//		fflush(stdout);
+
+	exec_path = argv[4];
+
+	for(j=0; j<argc-4; j++){
+		true_arg[j] = argv[j+5];
+				printf(" true_arg[%d]: %s\n",j,(char*)true_arg[j]);
+				fflush(stdout);
 	}
 
+	true_arg[argc-1] = NULL;
 	/* creation d'une socket pour se connecter au */
 	/* au lanceur et envoyer/recevoir les infos */
 	/* necessaires pour la phase dsm_init */
@@ -276,7 +281,6 @@ int main(int argc, char **argv){
 	/* Creation de la socket d'ecoute pour les */
 	/* connexions avec les autres processus dsm */
 	int serv_sock = creer_socket(num_procs,&my_ser_info,"8092");
-	//fcntl(serv_sock,F_SETFL,O_NONBLOCK);
 
 	fds[0].fd = serv_sock;
 
@@ -315,30 +319,30 @@ int main(int argc, char **argv){
 
 		info_cur_proc = info_rank(i,info_all_proc);
 
-//		printf(" name: %s, Condition: %s\n",info_cur_proc.connect_info.name,h_name);
-//		fflush(stdout);
+		//		printf(" name: %s, Condition: %s\n",info_cur_proc.connect_info.name,h_name);
+		//		fflush(stdout);
 
 
 		if(strcmp(h_name,info_cur_proc.connect_info.name)!=0){ // c'est pas à moi d'accepter les connexions, je me connecte aux autres
 			ip_addr = info_cur_proc.connect_info.ip_addr;
 			sprintf(port,"%d",info_cur_proc.connect_info.port);
 
-//			printf(" ip_addr: %s, port: %s \n",ip_addr,port);
-//			fflush(stdout);
-//			printf(" WAIT CO: by %s ;\n",h_name);
-//			fflush(stdout);
+			//			printf(" ip_addr: %s, port: %s \n",ip_addr,port);
+			//			fflush(stdout);
+			//			printf(" WAIT CO: by %s ;\n",h_name);
+			//			fflush(stdout);
 
 			erreur = 1;
 			while(erreur == 1){
-//				printf(" name: %s : port: %s\n",h_name,port);
-//				fflush(stdout);
+				//				printf(" name: %s : port: %s\n",h_name,port);
+				//				fflush(stdout);
 				client_sock = do_connect(ip_addr,port);
 				erreur = do_check_co(client_sock);
 				if(erreur == 1){
 					close(client_sock);
 				}
-//				printf(" client_socket : %d ; erreur: %d\n",client_sock,erreur);
-//				fflush(stdout);
+				//				printf(" client_socket : %d ; erreur: %d\n",client_sock,erreur);
+				//				fflush(stdout);
 			}
 
 			fill_write_socket(client_sock, info_all_proc, i);
@@ -350,17 +354,17 @@ int main(int argc, char **argv){
 		}
 		else{ // j'accepte les connexions
 			for(j=0;j<num_procs-1;j++){
-//				printf(" name : %s ; ATENTE %d\n",h_name,j);
-//				fflush(stdout);
+				//				printf(" name : %s ; ATENTE %d\n",h_name,j);
+				//				fflush(stdout);
 				client_sock = accept(serv_sock,(struct sockaddr*)&sin,(socklen_t*) &size_sin);
 				do_wait_co(client_sock); // Valide la connexion
 				fds[i].fd = client_sock;
-//				printf(" i am %s, i have accepted someone!!!\n",h_name);
-//				fflush(stdout);
+				//				printf(" i am %s, i have accepted someone!!!\n",h_name);
+				//				fflush(stdout);
 				do_read(client_sock);
 				fill_read_socket(client_sock,info_all_proc,i);
-//				printf(" buffer: %s\n",buffer);
-//				fflush(stdout);
+				//				printf(" buffer: %s\n",buffer);
+				//				fflush(stdout);
 			}
 		}
 
@@ -382,8 +386,9 @@ int main(int argc, char **argv){
 		free(info_all_proc[i].connect_info.ip_addr);
 	}
 
-
+	printf(" exec_path: %s\n",exec_path);
+	fflush(stdout);
 	/* on execute la bonne commande */
-	//execvp("./Documents/C/Projet/PR204_Dsm/Phase1/bin/truc",true_arg);
+	execvp(exec_path,true_arg);
 	return 0;
 }
