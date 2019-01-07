@@ -10,7 +10,7 @@ volatile int  DSM_NODE_ID ;
 volatile int* BASE_ADDR ;
 volatile int* TOP_ADDR ;
 
-int STATUS = 0 ; 
+int STATUS = 0 ;
 char buffer[512];
 const int buff_size = 512;
 
@@ -109,8 +109,10 @@ void sigchld_handler(int sig)
 int do_read(int client_sock){
 
 	strcat(buffer,"\0");
-	int bit_rcv=0;
+
+	int bit_rcv = 0;
 	int *size_txt = malloc(sizeof(int));
+
 	*size_txt = 0;
 	memset(buffer,'\0',buff_size);
 
@@ -136,8 +138,9 @@ int do_read(int client_sock){
 		close(client_sock); return 1;
 	}
 
-	//			printf(" dsmwrap.c: do_read: 127: buffer: %s\n", buffer);
-	//			fflush(stdout);
+	printf(" dsmexec.c: do_read: 127: buffer: %s\n", buffer);
+	fflush(stdout);
+
 
 	free(size_txt);
 	return 0;
@@ -195,7 +198,7 @@ int main(int argc, char *argv[]){
 	num_procs = nb_of_user(path);
 	pid_t pid[num_procs];
 
-	if (argc < 3){
+	if (argc < 1){
 		usage();
 	} else {
 		int i;
@@ -206,6 +209,7 @@ int main(int argc, char *argv[]){
 
 		memset (sig_zombie, 0 , sizeof(struct sigaction) );
 		sig_zombie -> sa_handler = sigchld_handler ;
+		sigaction(SIGCHLD, sig_zombie,0);
 
 		/* lecture du fichier de machines */
 		/* 1- on recupere le nombre de processus a lancer */
@@ -250,9 +254,9 @@ int main(int argc, char *argv[]){
 			//printf("pid: %d\n",pid);
 
 			if (pid[i] == 0) { /* fils */
-				int j;
+			int j;
 				/* redirection stdout */
-				dup2(STDOUT_FILENO,tube_stdout[0][i]);
+			dup2(STDOUT_FILENO,tube_stdout[0][i]);
 				close(tube_stdout[0][i]); //suppression tube en lecture
 
 
@@ -275,11 +279,8 @@ int main(int argc, char *argv[]){
 				strcpy(newargv[4],int_to_char);
 				sprintf(int_to_char, "%d", num_procs);
 				strcpy(newargv[5], int_to_char);
-
-				free(int_to_char);
 				for(j=1; j<=argc; j++){
 					newargv[j+5]=argv[j];
-//					printf(" arg[%d]: %s\n",j+5,newargv[j+5]);
 				}
 
 				execvp("ssh",newargv);
@@ -368,7 +369,6 @@ int main(int argc, char *argv[]){
 		}
 
 		/* envoi du nombre de processus aux processus dsm*/
-		// Deja fait. Le nombre de processus est une variable envoyé dès le lancement de dsmwrap.
 
 		/* envoi des infos de connexion aux processus */
 		for(j=0;j<num_procs;j++){
@@ -389,21 +389,37 @@ int main(int argc, char *argv[]){
 				sprintf(buffer, "%d",info_process_distant[i].connect_info.port);
 				do_write(csock);
 			}
-		}
+
 
 
 
 
 		//		/* gestion des E/S : on recupere les caracteres */
 		//		/* sur les tubes de redirection de stdout/stderr */
-		//		/*while(1)
-		//         {
-		//            je recupere les infos sur les tubes de redirection
-		//            jusqu'à ce qu'ils soient inactifs (ie fermes par les
-		//            processus dsm ecrivains de l'autre cote ...)
-		//
-		//         }
-		//		 */
+			while(1)
+			{
+
+
+				if (fds[j].revents == POLLIN){
+					read(tube_stdout[0][j], buffer, num_procs);
+					wait(NULL);
+					printf("%s\n test",buffer);
+					fflush(stdout);
+
+					read(tube_stderr[0][j], buffer, num_procs);
+					fflush(stderr);
+				}
+				else {
+					break;
+				}
+
+
+		            /*je recupere les infos sur les tubes de redirection
+		            jusqu'à ce qu'ils soient inactifs (ie fermes par les
+		            processus dsm ecrivains de l'autre cote ...)*/
+
+			}
+		}
 		//
 		//		/* on attend les processus fils */
 
@@ -420,7 +436,7 @@ int main(int argc, char *argv[]){
 			free(info_process_distant[i].connect_info.name);
 			free(info_process_distant[i].connect_info.ip_addr);
 		}
+
 	}
 	exit(EXIT_SUCCESS);
 }
-
